@@ -7,7 +7,7 @@ This add-in integrates a new tab "GALOPPSIM" in the Excel ribbon with all the op
 
 ### Version 148.00 (08 August 2017)
 * Initial release
-* Flat race (2400m, turf track) 
+* Race: Deutsches Derby (2400m flat race, turf track) 
 * Racing tactics (optional)
 * Display hoof prints (optional)
 * Display the names and colors of the horses during the race (optional)
