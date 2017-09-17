@@ -1,0 +1,115 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2006/01/customui">
+  <ribbon startFromScratch="false">
+    <tabs>
+      <tab id="tabGALSIM" label="GALOPPSIM">
+
+        <group id="group1GALSIM" label="Galopprennen">
+
+          <button id="btn1GALSIM" label="Start" size="large" 
+		onAction="START" image="start"
+		screentip="Rennen starten"
+		supertip="Neues Rennen starten unter Berücksichtigung der Optionen"/>
+
+	    <button id="btn2GALSIM" label="Klassement" size="large" 
+		onAction="ERGEBNIS" image="ergebnis"
+		screentip="Klassement anzeigen"
+		supertip="Ergebnistafel anzeigen, sofern das Rennen beendet ist"/>
+
+	    <button id="btn3GALSIM" label="Zielfoto" size="large" 
+		onAction="FOTO" image="foto"
+		screentip="Zielfoto"
+		supertip="Zielfoto anzeigen, sofern das Rennen beendet ist"/>
+
+	 </group>
+
+	 <group id="group2GALSIM" label="Optionen">
+
+	    <checkBox id="chk1GALSIM" label="Renntaktik"
+		onAction="OPTIONEN"
+		getPressed="OPTIONEN_INI"
+		screentip="Rennen in Rennphasen einteilen"
+		supertip="Die Pferde gehen das Rennen unterschiedlich an, das heißt jedes Pferd läuft nach seiner eigenen Taktik. Manche versuchen von der Spitze weg zu laufen, andere schonen sich anfangs und attackieren gegen Ende des Rennens. Über die Renndistanz gleicht sich dieser Faktor aus und hat damit quasi keinen Einfluss auf den Ausgang des Rennens."/>
+
+	    <checkBox id="chk3GALSIM" label="Hufspuren"
+		onAction="OPTIONEN"
+		getPressed="OPTIONEN_INI"
+		screentip="Hufspuren"
+		supertip="Hufspuren während des Rennens grafisch darstellen"/>
+
+	    <checkBox id="chk4GALSIM" label="Klassement verzögern"
+		onAction="OPTIONEN"
+		getPressed="OPTIONEN_INI"
+		screentip="Klassement verzögern"
+		supertip="Rennergebnis Platz für Platz mit Verzögerung anzeigen zur Steigerung der Spannung"/>
+
+	    <checkBox id="chk2GALSIM" label="Namen der Pferde im Rennen anzeigen"
+		onAction="OPTIONEN"
+		getPressed="OPTIONEN_INI"
+		screentip="Namen anzeigen"
+		supertip="Namen und Startnummern der Pferde während des Rennens am linken Rand anzeigen"/>
+
+	    <checkBox id="chk10GALSIM" label="Farben der Pferde im Rennen anzeigen"
+		onAction="OPTIONEN"
+		getPressed="OPTIONEN_INI"
+		screentip="Farben anzeigen"
+		supertip="Farben der Pferde während des Rennens am linken Rand anzeigen"/>
+
+	    <checkBox id="chk8GALSIM" label="Namen der Pferde im Ziel anzeigen"
+		onAction="OPTIONEN"
+		getPressed="OPTIONEN_INI"
+		screentip="Namen anzeigen"
+		supertip="Namen der Pferde beim Zieleinlauf anzeigen"/>
+
+	    <checkBox id="chk6GALSIM" label="Zoom"
+		onAction="OPTIONEN"
+		getPressed="OPTIONEN_INI"
+		screentip="Zoom"
+		supertip="Pferde und Bahn größer darstellen, wenn das Excel-Fenster ausreichend groß ist"/>
+
+	 </group>
+
+	 <group id="group3GALSIM" label="Excel-Optionen">
+
+	    <checkBox id="chk5GALSIM" label="Fenster maximieren"
+		onAction="OPTIONEN"
+		getPressed="OPTIONEN_INI"
+		screentip="Fenster maximieren"
+		supertip="Excel-Fenster auf Bildschirmgröße maximieren"/>
+
+	    <checkBox id="chk9GALSIM" label="Zeilen-/Spaltennummern ausblenden"
+		onAction="OPTIONEN"
+		getPressed="OPTIONEN_INI"
+		screentip="Zeilen- und Spaltennummern ausblenden"
+		supertip="Auf dem Tabellenblatt mit dem Rennen die Zeilen- und Spaltennummern ausblenden"/>
+
+	    <checkBox id="chk7GALSIM" label="Gitternetzlinien ausblenden"
+		onAction="OPTIONEN"
+		getPressed="OPTIONEN_INI"
+		screentip="Gitternetzlinien ausblenden"
+		supertip="Auf dem Tabellenblatt mit dem Rennen die Gitternetzlinien ausblenden"/>
+
+	 </group>
+
+       <group id="group4GALSIM" >
+
+           <button id="btn5GALSIM" label="Info" size="large" 
+		onAction="INFO" image="info"
+		screentip="Info"
+		supertip="Infos und technische Beschreibung"/>
+
+           <button id="btn6GALSIM" label="Warnhinweis" size="large" 
+		onAction="WARNUNG" image="warnung"
+		screentip="Warnhinweis"
+		supertip="Warnhinweis zum Galopp-Simulator"/>
+
+	   <button id="btn4GALSIM" label="Beenden" size="large" 
+		onAction="ENDE" image="ende"
+		screentip="Beenden"
+		supertip="Tabellenblatt 'GALOPPSIM' löschen"/>
+
+	 </group>
+
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>
