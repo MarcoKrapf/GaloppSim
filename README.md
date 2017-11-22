@@ -1,9 +1,16 @@
 # GaloppSim
-[Excel-Add-In (.xlam)](https://marco-krapf.de/excel/galoppsim) that integrates a horse racing simulator in Microsoft Excel.
-
-This add-in integrates a new tab "GALOPPSIM" in the Excel ribbon with all the options for an exciting and stunning race event.
+The horse racing simulator is available as [Excel Add-In (.xlam) or Workbook (.xlsm)](https://marco-krapf.de/excel/galoppsim)
+and takes you to different race tracks around the world for exciting and stunning race events.
 
 ## Version history
+
+### Version 148.10 (22 November 2017)
+* Four races to choose
+* Placing bets (in this version only of type "Win")
+* Advertising on the race track
+* Highlighting the favorite (optional)
+* Horse colours on the ranking list (optional)
+* Two file types available: AI edition (Add-in, xlam) and RS edition (Run Simple, xlsm)
 
 ### Version 148.00 (08 August 2017)
 * Initial release
