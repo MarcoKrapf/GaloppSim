@@ -3,6 +3,12 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 
 ## Version history
 
+### Version 148.20 (05 December 2017)
+* Bilingual interface (EN/DE)
+* Five races
+* RS edition only
+* 3,5" floppy disk shipping only
+
 ### Version 148.10 (22 November 2017)
 * Four races to choose
 * Placing bets (in this version only of type "Win")
@@ -26,15 +32,12 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 * German language only
 
 ### Planned for further releases
-* Bilingual interface (EN/DE)
 * More races available
 * More tracks (dirt, snow...)
 * More racing types (jump racing, endurance racing...)
 * More graphical elements (tribune, audience...)
 * Photo finish more detailed
-* Highlighting the favorites
 * Racing accidents
 * Race editor
 * Replay of the finish / of the whole race
 * Saving options for races
-* Placing bets
