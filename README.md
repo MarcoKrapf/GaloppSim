@@ -5,6 +5,8 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 
 ### Version 148.30 (25 December 2017)
 * Pixel movie showing the initial idea of the horse racing simulator
+* AI and RS edition
+* User interface of the AI edition reengineered
 
 ### Version 148.20 (05 December 2017)
 * Bilingual interface (EN/DE)
