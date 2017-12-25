@@ -1,148 +1,168 @@
-<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad="MyAddinInitialize">
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad="AI_GALOPPSIMAddinInitialize">
   <ribbon startFromScratch="false" >
 
     <tabs>
-      <tab id="tabGALSIM" label="GALOPPSIM">
+      <tab id="tabGALOPPSIM" label="GALOPPSIM">
 
-        <group id="group1GALSIM" label="Galopprennen">
+	 <group id="group2GALOPPSIM" getLabel="AI_GetLabel">
+
+		<menu id="menu1GALOPPSIM" image="optionsRacing" size="large" getLabel="AI_GetLabel" itemSize="large">
+			
+			<menuSeparator id="menuCaptionGALOPPSIM2" getTitle="AI_GetTitle"/>
+
+	    			<checkBox id="chk1GALOPPSIM" getLabel="AI_GetLabel"
+					onAction="AI_OPTIONEN"
+					getPressed="AI_OPTIONEN_INI"
+					getScreentip="AI_GetScreentip"
+					getSupertip="AI_GetSupertip"/>
+
+	    			<checkBox id="chk3GALOPPSIM" getLabel="AI_GetLabel"
+					onAction="AI_OPTIONEN"
+					getPressed="AI_OPTIONEN_INI"
+					getScreentip="AI_GetScreentip"
+					getSupertip="AI_GetSupertip"/>
+
+	    			<checkBox id="chk6GALOPPSIM" getLabel="AI_GetLabel"
+					onAction="AI_OPTIONEN"
+					getPressed="AI_OPTIONEN_INI"
+					getScreentip="AI_GetScreentip"
+					getSupertip="AI_GetSupertip"/>
+
+			<menuSeparator id="menuCaptionGALOPPSIM3" getTitle="AI_GetTitle"/>
+
+	    			<checkBox id="chk2GALOPPSIM" getLabel="AI_GetLabel"
+					onAction="AI_OPTIONEN"
+					getPressed="AI_OPTIONEN_INI"
+					getScreentip="AI_GetScreentip"
+					getSupertip="AI_GetSupertip"/>
+
+
+	    			<checkBox id="chk10GALOPPSIM" getLabel="AI_GetLabel"
+					onAction="AI_OPTIONEN"
+					getPressed="AI_OPTIONEN_INI"
+					getScreentip="AI_GetScreentip"
+					getSupertip="AI_GetSupertip"/>
+
+
+	    			<checkBox id="chk11GALOPPSIM" getLabel="AI_GetLabel"
+					onAction="AI_OPTIONEN"
+					getPressed="AI_OPTIONEN_INI"
+					getScreentip="AI_GetScreentip"
+					getSupertip="AI_GetSupertip"/>
+
+
+	    			<checkBox id="chk8GALOPPSIM" getLabel="AI_GetLabel"
+					onAction="AI_OPTIONEN"
+					getPressed="AI_OPTIONEN_INI"
+					getScreentip="AI_GetScreentip"
+					getSupertip="AI_GetSupertip"/>
+
+
+			<menuSeparator id="menuCaptionGALOPPSIM4" getTitle="AI_GetTitle"/>
+
+	    			<checkBox id="chk12GALOPPSIM" getLabel="AI_GetLabel"
+					onAction="AI_OPTIONEN"
+					getPressed="AI_OPTIONEN_INI"
+					getScreentip="AI_GetScreentip"
+					getSupertip="AI_GetSupertip"/>
+
+
+	    			<checkBox id="chk4GALOPPSIM" getLabel="AI_GetLabel"
+					onAction="AI_OPTIONEN"
+					getPressed="AI_OPTIONEN_INI"
+					getScreentip="AI_GetScreentip"
+					getSupertip="AI_GetSupertip"/>
+
+
+		</menu>
+
+		<menu id="menu2GALOPPSIM" image="optionsExcel" size="large" getLabel="AI_GetLabel" itemSize="large">
+ 
+	    		<checkBox id="chk5GALOPPSIM" getLabel="AI_GetLabel"
+				onAction="AI_OPTIONEN"
+				getPressed="AI_OPTIONEN_INI"
+				getScreentip="AI_GetScreentip"
+				getSupertip="AI_GetSupertip"/>
+
+	    		<checkBox id="chk9GALOPPSIM" getLabel="AI_GetLabel"
+				onAction="AI_OPTIONEN"
+				getPressed="AI_OPTIONEN_INI"
+				getScreentip="AI_GetScreentip"
+				getSupertip="AI_GetSupertip"/>
+
+	    		<checkBox id="chk7GALOPPSIM" getLabel="AI_GetLabel"
+				onAction="AI_OPTIONEN"
+				getPressed="AI_OPTIONEN_INI"
+				getScreentip="AI_GetScreentip"
+				getSupertip="AI_GetSupertip"/>
+  		</menu>
+
+	 </group>
+
+       <group id="group1GALOPPSIM" getLabel="AI_GetLabel">
+
+         	<button id="btn1GALOPPSIM" getLabel="AI_GetLabel" size="large" 
+			onAction="AI_START" image="start"
+			getScreentip="AI_GetScreentip"
+			getSupertip="AI_GetSupertip"/>
 
 		<dropDown id="comboInstRennen"
-			label="Rennen"
-            		getItemCount="InstRennen_getItemCount"
-            		getItemLabel="InstRennen_getItemLabel"
-            		onAction="InstRennen_Click"
+			getLabel="AI_GetLabel"
+            		getItemCount="AI_InstRennen_getItemCount"
+            		getItemLabel="AI_InstRennen_getItemLabel"
+            		onAction="AI_InstRennen_Click"
 			sizeString="MMMMMMMMMMMMMMMM"
-			screentip="Rennen auswählen"
-			supertip="Auswahl eines der installierten Rennen."/>
-
-         	<button id="btn1GALSIM" label="Start" size="large" 
-			onAction="START" image="start"
-			screentip="Rennen starten"
-			supertip="Neues Rennen starten unter Berücksichtigung der Optionen"/>
-
-	   	<button id="btn2GALSIM" label="Klassement" size="large" 
-			onAction="ERGEBNIS" image="ergebnis"
-			screentip="Klassement anzeigen"
-			supertip="Ergebnistafel anzeigen, sofern das Rennen beendet ist"/>
-
-	   	<button id="btn3GALSIM" label="Zielfoto" size="large" 
-			onAction="FOTO" image="foto"
-			screentip="Zielfoto"
-			supertip="Zielfoto anzeigen, sofern das Rennen beendet ist"/>
+			getScreentip="AI_GetScreentip"
+			getSupertip="AI_GetSupertip"/>
 
 	 </group>
 
-	 <group id="group5GALSIM" label="Wetten">
+	 <group id="group5GALOPPSIM" getLabel="AI_GetLabel">
 
-         	<button id="btn7GALSIM" label="Auswertung der Wetten" size="large" 
-			onAction="WETTEN" image="money"
-			screentip="Auswertung der Wetten anzeigen"
-			supertip="Auflistung aller abgegebenen Wetten der vorigen Rennens mit Einsatz und Gewinn."/>
+	   	<button id="btn2GALOPPSIM" getLabel="AI_GetLabel" size="large" 
+			onAction="AI_ERGEBNIS" image="ergebnis"
+			getScreentip="AI_GetScreentip"
+			getSupertip="AI_GetSupertip"/>
 
-	    	<checkBox id="chk13GALSIM" label="Wettmodus aktiv"
-			onAction="OPTIONEN"
-			getPressed="OPTIONEN_INI"
-			screentip="Wetten (Beta-Version)"
-			supertip="Auf die Pferde kann gewettet werden (aktuell nur auf den Sieger)"/>
+	   	<button id="btn3GALOPPSIM" getLabel="AI_GetLabel" size="large" 
+			onAction="AI_FOTO" image="foto"
+			getScreentip="AI_GetScreentip"
+			getSupertip="AI_GetSupertip"/>
 
+         	<button id="btn7GALOPPSIM" getLabel="AI_GetLabel" size="large" 
+			onAction="AI_WETTEN" image="money"
+			getScreentip="AI_GetScreentip"
+			getSupertip="AI_GetSupertip"/>
 	 </group>
 
-	 <group id="group2GALSIM" label="Optionen">
+       <group id="group4GALOPPSIM" >
 
-	    <checkBox id="chk1GALSIM" label="Renntaktik"
-		onAction="OPTIONEN"
-		getPressed="OPTIONEN_INI"
-		screentip="Rennen in Rennphasen einteilen"
-		supertip="Die Pferde gehen das Rennen unterschiedlich an, das heißt jedes Pferd läuft nach seiner eigenen Taktik. Manche versuchen von der Spitze weg zu laufen, andere schonen sich anfangs und attackieren gegen Ende des Rennens. Über die Renndistanz gleicht sich dieser Faktor aus und hat damit quasi keinen Einfluss auf den Ausgang des Rennens."/>
+		<menu id="menu3GALOPPSIM" image="languageSelect" size="large" getLabel="AI_GetLabel" itemSize="large">
+	   		<button id="btn8GALOPPSIM" getLabel="AI_GetLabel" image="languageDE" onAction="AI_DE"/>
+			<button id="btn9GALOPPSIM" getLabel="AI_GetLabel" image="languageEN" onAction="AI_EN"/>
 
-	    <checkBox id="chk3GALSIM" label="Hufspuren"
-		onAction="OPTIONEN"
-		getPressed="OPTIONEN_INI"
-		screentip="Hufspuren"
-		supertip="Hufspuren während des Rennens grafisch darstellen"/>
+  		</menu>
 
-	    <checkBox id="chk2GALSIM" label="Namen der Pferde im Rennen"
-		onAction="OPTIONEN"
-		getPressed="OPTIONEN_INI"
-		screentip="Namen anzeigen"
-		supertip="Namen und Startnummern der Pferde während des Rennens am linken Rand anzeigen"/>
 
-	    <checkBox id="chk10GALSIM" label="Farben der Pferde im Rennen"
-		onAction="OPTIONEN"
-		getPressed="OPTIONEN_INI"
-		screentip="Farben anzeigen"
-		supertip="Farben der Pferde während des Rennens am linken Rand anzeigen"/>
+           	<button id="btn5GALOPPSIM" getLabel="AI_GetLabel" size="large" 
+			onAction="AI_INFO" image="info"
+			getScreentip="AI_GetScreentip"
+			getSupertip="AI_GetSupertip"/>
 
-	    <checkBox id="chk11GALSIM" label="Favorit markieren"
-		onAction="OPTIONEN"
-		getPressed="OPTIONEN_INI"
-		screentip="Favorit markieren"
-		supertip="Den Favoriten am linken Rand markieren"/>
+           	<button id="btn6GALOPPSIM" getLabel="AI_GetLabel" size="large" 
+			onAction="AI_WARNUNG" image="warnung"
+			getScreentip="AI_GetScreentip"
+			getSupertip="AI_GetSupertip"/>
 
-	    <checkBox id="chk8GALSIM" label="Namen der Pferde im Ziel"
-		onAction="OPTIONEN"
-		getPressed="OPTIONEN_INI"
-		screentip="Namen anzeigen"
-		supertip="Namen der Pferde beim Zieleinlauf anzeigen"/>
+          	<button id="btn11GALOPPSIM" getLabel="AI_GetLabel" size="large" 
+			onAction="AI_MOVIE1" image="movie1"
+			getScreentip="AI_GetScreentip"
+			getSupertip="AI_GetSupertip"/>
 
-	    <checkBox id="chk12GALSIM" label="Farben im Klassement"
-		onAction="OPTIONEN"
-		getPressed="OPTIONEN_INI"
-		screentip="Farben im Klassement"
-		supertip="Rennfarben der Pferde im Klassement anzeigen"/>
-
-	    <checkBox id="chk4GALSIM" label="Klassement verzögern"
-		onAction="OPTIONEN"
-		getPressed="OPTIONEN_INI"
-		screentip="Klassement verzögern"
-		supertip="Rennergebnis Platz für Platz mit Verzögerung anzeigen zur Steigerung der Spannung"/>
-
-	    <checkBox id="chk6GALSIM" label="Zoom"
-		onAction="OPTIONEN"
-		getPressed="OPTIONEN_INI"
-		screentip="Zoom"
-		supertip="Pferde und Bahn größer darstellen, wenn das Excel-Fenster ausreichend groß ist"/>
-
-	 </group>
-
-	 <group id="group3GALSIM" label="Excel-Optionen">
-
-	    <checkBox id="chk5GALSIM" label="Fenster maximieren"
-		onAction="OPTIONEN"
-		getPressed="OPTIONEN_INI"
-		screentip="Fenster maximieren"
-		supertip="Excel-Fenster auf Bildschirmgröße maximieren"/>
-
-	    <checkBox id="chk9GALSIM" label="Zeilen-/Spaltennummern ausblenden"
-		onAction="OPTIONEN"
-		getPressed="OPTIONEN_INI"
-		screentip="Zeilen- und Spaltennummern ausblenden"
-		supertip="Auf dem Tabellenblatt mit dem Rennen die Zeilen- und Spaltennummern ausblenden"/>
-
-	    <checkBox id="chk7GALSIM" label="Gitternetzlinien ausblenden"
-		onAction="OPTIONEN"
-		getPressed="OPTIONEN_INI"
-		screentip="Gitternetzlinien ausblenden"
-		supertip="Auf dem Tabellenblatt mit dem Rennen die Gitternetzlinien ausblenden"/>
-
-	 </group>
-
-       <group id="group4GALSIM" >
-
-           <button id="btn5GALSIM" label="Info" size="large" 
-		onAction="INFO" image="info"
-		screentip="Info"
-		supertip="Infos und technische Beschreibung"/>
-
-           <button id="btn6GALSIM" label="Warnhinweis" size="large" 
-		onAction="WARNUNG" image="warnung"
-		screentip="Warnhinweis"
-		supertip="Warnhinweis zum Galopp-Simulator"/>
-
-	   <button id="btn4GALSIM" label="Beenden" size="large" 
-		onAction="ENDE" image="ende"
-		screentip="Beenden"
-		supertip="Tabellenblatt 'GALOPPSIM' löschen"/>
+	 	<button id="btn4GALOPPSIM" getLabel="AI_GetLabel" size="large" 
+			onAction="AI_ENDE" image="ende"
+			getScreentip="AI_GetScreentip"
+			getSupertip="AI_GetSupertip"/>
 
 	 </group>
 
