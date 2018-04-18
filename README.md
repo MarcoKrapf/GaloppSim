@@ -37,7 +37,7 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 
 ### Version 148.00 (08 August 2017)
 * Initial release
-* Race: Deutsches Derby (2400m flat race, turf track) 
+* One race: Deutsches Derby 2017 (2400m flat race, turf track) 
 * Racing tactics (optional)
 * Display hoof prints (optional)
 * Display the names and colors of the horses during the race (optional)
