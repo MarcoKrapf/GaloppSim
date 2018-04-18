@@ -51,7 +51,7 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 
 ### Planned for further releases
 * More races available
-* More tracks (dirt, snow...)
+* More tracks
 * More racing types (jump racing, endurance racing...)
 * More graphical elements (tribune, audience...)
 * Racing accidents
