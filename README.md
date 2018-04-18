@@ -9,9 +9,9 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 * Two types of racing tactics
 * Focused Run mode
 * Three zoom levels of the racetrack
-* Zoom level recommendation depending on screen size and race
-* User interface of the RS edition reengineered
+* Zoom level recommendation depending on screen size and chosen race
 * Evaluation of the betting slips reengineered
+* User interface of the RS edition reengineered
 * Info section reengineered
 * Race information during the race (race name and distance)
 * More Excel options (only in RS edition): Hiding the Excel ribbon, worksheet tabs, formula bar, status bar, horizontal and vertical scrollbar possible
