@@ -3,6 +3,19 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 
 ## Version history
 
+### Version 148.50 (18 April 2018)
+* Six races, one of them on a snow track
+* Photo of the finish in greater precision (1/10 meter)
+* Two types of racing tactics
+* Focused Run mode
+* Three zoom levels of the racetrack
+* Zoom level recommendation depending on screen size and race
+* User interface of the RS edition reengineered
+* Evaluation of the betting slips reengineered
+* Info section reengineered
+* Race information during the race (race name and distance)
+* More Excel options (only in RS edition): Hiding the Excel ribbon, worksheet tabs, formula bar, status bar, horizontal and vertical scrollbar possible
+
 ### Version 148.30 (25 December 2017)
 * Pixel movie showing the initial idea of the horse racing simulator
 * AI and RS edition
@@ -28,12 +41,12 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 * Racing tactics (optional)
 * Display hoof prints (optional)
 * Display the names and colors of the horses during the race (optional)
-* Photo finish
+* Photo of the finish
 * Ranking list after the event
-* Zoom when the screen is large enough (optional)
-* Automatically maximize the Excel window (optional)
-* Hide Excel rows and columns (optional)
-* Hide Excel grid lines (optional)
+* Race track zoom when the screen is large enough (optional)
+* Automatically maximization of the Excel window (optional)
+* Hiding Excel rows and columns (optional)
+* Hiding Excel grid lines (optional)
 * German language only
 
 ### Planned for further releases
@@ -41,7 +54,6 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 * More tracks (dirt, snow...)
 * More racing types (jump racing, endurance racing...)
 * More graphical elements (tribune, audience...)
-* Photo finish more detailed
 * Racing accidents
 * Race editor
 * Replay of the finish / of the whole race
