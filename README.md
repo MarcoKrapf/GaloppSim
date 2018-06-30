@@ -55,7 +55,7 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 * Photo of the finish
 * Ranking list after the event
 * Race track zoom when the screen is large enough (optional)
-* Automatically maximization of the Excel window (optional)
+* Automatical maximization of the Excel window (optional)
 * Hiding Excel rows and columns (optional)
 * Hiding Excel grid lines (optional)
 * German language only
