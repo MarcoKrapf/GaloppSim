@@ -3,6 +3,17 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 
 ## Version history
 
+### Version 148.96 (30 June 2018)
+* Race information extended including a race progress bar and the current leader
+* Distance of the race track markers can be adjusted
+* Race options settings can be saved
+
+### Version 148.90 (18 June 2018)
+* Eight races, including the legendary Gold Diggers in Mouseton/Calisota (1948)
+* Two types of slipstream effects can be activated and visualised
+* Info section extended including algorithm explanation and deactivation
+* Bulgarian language added
+
 ### Version 148.50 (18 April 2018)
 * Six races, one of them on a snow track
 * Photo of the finish in greater precision (1/10 meter)
