@@ -61,11 +61,10 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 * German language only
 
 ### Planned for further releases
-* More races available
-* More tracks
 * More racing types (jump racing, endurance racing...)
 * More graphical elements (tribune, audience...)
-* Racing accidents
+* Racing incidents
 * Race editor
 * Replay of the finish / of the whole race
 * Saving options for races
+* More languuages
