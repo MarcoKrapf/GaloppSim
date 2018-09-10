@@ -19,11 +19,11 @@ Private intGuess() As Integer 'Guess
 
 'PROPERTIES
 '----------
-Public Property Get id() As String
-    id = intID
+Public Property Get ID() As String
+    ID = intID
 End Property
 
-Public Property Let id(ByVal nr As String)
+Public Property Let ID(ByVal nr As String)
     intID = nr
 End Property
 Public Property Get GamblerName() As String

@@ -25,6 +25,6 @@ Public Property Get RSbtnID() As String
     RSbtnID = nameID
 End Property
 
-Public Property Let RSbtnID(ByVal id As String)
-    nameID = id
+Public Property Let RSbtnID(ByVal ID As String)
+    nameID = ID
 End Property
