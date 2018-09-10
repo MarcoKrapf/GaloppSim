@@ -75,4 +75,4 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 * Race editor
 * Replay of the finish / of the whole race
 * Saving options for races
-* More languuages
+* More languages
