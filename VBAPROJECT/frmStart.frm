@@ -14,8 +14,6 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit
 
-'ToDo: Module description
-
 Dim i As Integer, j As Integer
 
 Private Sub cmdS1_Click() 'Click on "New bet slip"
@@ -39,8 +37,8 @@ Private Sub cmdS2_Click() 'Start the race
             'Set the button mode
             g_strMsgButtons = "OK"
             'Assign the text for the pop-up
-            g_strMsgCaption = g_c_TOOL
-            g_strMsgText = g_strTxt(97)
+            g_strMsgCaption = g_c_tool
+            g_strMsgText = GetTxt(g_arrTxt, "START011")
             'Display the pop-up
             frmMsg_Attention.Show
         Exit Sub
@@ -115,7 +113,7 @@ Private Sub UserForm_Initialize()
     End With
     
     'Display the UserForm in the center of the Window
-    Call basMainCode.PlaceUserFormInCenter(Me)
+    Call basAuxiliary.PlaceUserFormInCenter(Me)
     
 End Sub
 
@@ -135,8 +133,8 @@ Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
         'Set the button mode
         g_strMsgButtons = "YesNo"
         'Assign the text for the pop-up
-        g_strMsgCaption = g_c_TOOL
-        g_strMsgText = g_strTxt(103)
+        g_strMsgCaption = g_c_tool
+        g_strMsgText = GetTxt(g_arrTxt, "START004")
         'Display the pop-up
         frmMsg_MultiPurpose.Show
         'Evaluate return value

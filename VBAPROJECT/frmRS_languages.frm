@@ -1,6 +1,6 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmRS_languages 
-   ClientHeight    =   2625
+   ClientHeight    =   3165
    ClientLeft      =   120
    ClientTop       =   450
    ClientWidth     =   4560
@@ -17,26 +17,24 @@ Option Explicit
 Private Sub UserForm_Initialize()
     With Me
         'Captions
-        .Caption = g_c_TOOL
-        .fraRS_lan01.Caption = g_strTxt(229)
-        .optRS_lan01.Caption = g_strTxt(230) 'German
-        .optRS_lan02.Caption = g_strTxt(231) 'English
-'        .optRS_lan03.Caption = g_strTxt(232) 'Swiss German
-'        .optRS_lan04.Caption = g_strTxt(234) 'Bulgarian
+        .Caption = g_c_tool
+        .fraRS_lan01.Caption = GetTxt(g_arrTxt, "LANGUAGE001")
+        .optRS_lan01.Caption = GetTxt(g_arrTxt, "LANGUAGE002") 'German
+        .optRS_lan02.Caption = GetTxt(g_arrTxt, "LANGUAGE003") 'English
+        .optRS_lan03.Caption = GetTxt(g_arrTxt, "LANGUAGE006") 'Bulgarian
         'OK button
         With cmdRS_lan01
-            .Caption = g_strTxt(180) 'text
+            .Caption = GetTxt(g_arrTxt, "BTN014") 'text
             .AutoSize = True 'size
             .left = Me.Width - .Width - 18 'position
         End With
         .optRS_lan01.Value = (g_strLanguage = "DE") 'True/False
         .optRS_lan02.Value = (g_strLanguage = "EN")
-'        .optRS_lan03.Value = (g_strLanguage = "CH")
-'        .optRS_lan04.Value = (g_strLanguage = "BG")
+        .optRS_lan03.Value = (g_strLanguage = "BG")
     End With
     
     'Display the UserForm in the centre of the window
-    Call basMainCode.PlaceUserFormInCenter(Me)
+    Call basAuxiliary.PlaceUserFormInCenter(Me)
 End Sub
 
 Private Sub cmdRS_lan01_Click() 'OK button
@@ -46,10 +44,8 @@ Private Sub cmdRS_lan01_Click() 'OK button
             g_strLanguage = "DE"
         Case optRS_lan02.Value
             g_strLanguage = "EN"
-'        Case optRS_lan03.Value
-'            g_strLanguage = "CH"
-'        Case optRS_lan04.Value
-'            g_strLanguage = "BG"
+        Case optRS_lan03.Value
+            g_strLanguage = "BG"
     End Select
     'Close UserForm
     Unload Me

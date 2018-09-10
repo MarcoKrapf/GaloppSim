@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmRS_navigation 
-   Caption         =   "Run Simple mode"
+   Caption         =   "[Run Simple edition]"
    ClientHeight    =   1920
    ClientLeft      =   120
    ClientTop       =   450
-   ClientWidth     =   2640
+   ClientWidth     =   3960
    OleObjectBlob   =   "frmRS_navigation.frx":0000
    ShowModal       =   0   'False
    StartUpPosition =   1  'Fenstermitte
@@ -30,9 +30,11 @@ Private Sub UserForm_Activate()
 End Sub
 
 Private Sub UserForm_Initialize()
+    Me.Caption = GetTxt(g_arrTxt, "USERFORM005")
     With cmdNavigation
-        .BackColor = &H8080FF 'red
-        .Caption = g_strTxt(157)
+        .ForeColor = g_lngRaceInfoForeColour
+        .BackColor = g_lngRaceInfoBackColour
+        .Caption = GetTxt(g_arrTxt, "NAVI001")
         .WordWrap = True
     End With
 End Sub
