@@ -1,7 +1,7 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmOptionsExcel 
    Caption         =   "[Excel options]"
-   ClientHeight    =   4785
+   ClientHeight    =   5190
    ClientLeft      =   120
    ClientTop       =   450
    ClientWidth     =   6360
@@ -18,39 +18,26 @@ Option Explicit
 Private Sub UserForm_Initialize()
     With Me
         'Captions
-        .Caption = g_strTxt(253)
-        .chkRS_eo01.Caption = g_strTxt(271)
-        .chkRS_eo02.Caption = g_strTxt(272)
-        .chkRS_eo03.Caption = g_strTxt(273)
-        .chkRS_eo04.Caption = g_strTxt(269)
-        .chkRS_eo05.Caption = g_strTxt(270)
-        .chkRS_eo06.Caption = g_strTxt(274)
-        .chkRS_eo07.Caption = g_strTxt(275)
-        .chkRS_eo08.Caption = g_strTxt(276)
-        .chkRS_eo09.Caption = g_strTxt(277)
-        .cmdRS_eo01.Caption = g_strTxt(180)
-        .cmdRS_eo02.Caption = g_strTxt(185)
-        .cmdRS_eo03.Caption = g_strTxt(184)
-        'ControlTipTexts
-        .chkRS_eo01.ControlTipText = g_strTxt(319)
-        .chkRS_eo02.ControlTipText = g_strTxt(321)
-        .chkRS_eo03.ControlTipText = g_strTxt(323)
-        .chkRS_eo04.ControlTipText = g_strTxt(345)
-        .chkRS_eo05.ControlTipText = g_strTxt(347)
-        .chkRS_eo06.ControlTipText = g_strTxt(349)
-        .chkRS_eo07.ControlTipText = g_strTxt(351)
-        .chkRS_eo08.ControlTipText = g_strTxt(353)
-        .chkRS_eo09.ControlTipText = g_strTxt(355)
+        .Caption = GetTxt(g_arrTxt, "USERFORM002")
+        .chkRS_eo01.Caption = GetTxt(g_arrTxt, "EXCELOPT003")
+        .chkRS_eo02.Caption = GetTxt(g_arrTxt, "EXCELOPT004")
+        .chkRS_eo03.Caption = GetTxt(g_arrTxt, "EXCELOPT005")
+        .chkRS_eo04.Caption = GetTxt(g_arrTxt, "EXCELOPT001")
+        .chkRS_eo05.Caption = GetTxt(g_arrTxt, "EXCELOPT002")
+        .chkRS_eo06.Caption = GetTxt(g_arrTxt, "EXCELOPT006")
+        .chkRS_eo07.Caption = GetTxt(g_arrTxt, "EXCELOPT007")
+        .chkRS_eo08.Caption = GetTxt(g_arrTxt, "EXCELOPT008")
+        .chkRS_eo09.Caption = GetTxt(g_arrTxt, "EXCELOPT009")
+        .cmdRS_eo01.Caption = GetTxt(g_arrTxt, "BTN014")
+        .cmdRS_eo02.Caption = GetTxt(g_arrTxt, "BTN019")
+        .cmdRS_eo03.Caption = GetTxt(g_arrTxt, "BTN018")
     End With
     
     'Set checkbox values
     Call SetCheckboxes
     
-    'Hide the ribbon checkbox in AI edition
-    If g_strPlayMode = "AI" Then chkRS_eo04.Visible = False
-    
     'Display the UserForm in the center of the Window
-    Call basMainCode.PlaceUserFormInCenter(Me)
+    Call basAuxiliary.PlaceUserFormInCenter(Me)
 End Sub
 
 Private Sub SetCheckboxes() 'Set checkbox values
@@ -77,7 +64,7 @@ Private Sub cmdRS_eo02_Click() 'Reset button
 End Sub
 
 Private Sub cmdRS_eo03_Click() 'Big pic button
-    Call basMainCode.BigPicExcelOptions
+    Call basMainCode.ExcelOptionsTVfull
     Call SetCheckboxes
 End Sub
 
@@ -85,6 +72,8 @@ End Sub
 'Set Excel options
 '-----------------
 Private Sub chkRS_eo01_Click() 'Window size
+    On Error Resume Next
+    
     With Application.ActiveWindow
         If Me.chkRS_eo01 = True Then
             .WindowState = xlMaximized

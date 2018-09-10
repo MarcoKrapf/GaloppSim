@@ -51,13 +51,13 @@ Private Sub UserForm_Initialize()
     'Adjust the buttons
         Select Case g_strMsgButtons
             Case "OK"
-                Call AdjustButton(cmdMsgOK, g_strTxt(180), 0)
+                Call AdjustButton(cmdMsgOK, GetTxt(g_arrTxt, "BTN014"), 0)
             Case "CancelOK"
-                Call AdjustButton(cmdMsgOK, g_strTxt(180), 0)
-                Call AdjustButton(cmdMsgCancel, g_strTxt(181), cmdMsgOK.Width + 5)
+                Call AdjustButton(cmdMsgOK, GetTxt(g_arrTxt, "BTN014"), 0)
+                Call AdjustButton(cmdMsgCancel, GetTxt(g_arrTxt, "BTN015"), cmdMsgOK.Width + 5)
             Case "YesNo"
-                Call AdjustButton(cmdMsgYes, g_strTxt(182), cmdMsgNo.Width + 5)
-                Call AdjustButton(cmdMsgNo, g_strTxt(183), 0)
+                Call AdjustButton(cmdMsgYes, GetTxt(g_arrTxt, "BTN016"), cmdMsgNo.Width + 5)
+                Call AdjustButton(cmdMsgNo, GetTxt(g_arrTxt, "BTN017"), 0)
         End Select
         
     'Adjust the size of the pop-up
@@ -67,7 +67,8 @@ Private Sub UserForm_Initialize()
     End With
     
     'Display the pop-up in the center of the window
-    Call basMainCode.PlaceUserFormInCenter(Me)
+    Call basAuxiliary.PlaceUserFormInCenter(Me)
+    
 End Sub
 
 Private Sub AdjustButton(cmdButton As Object, strText As String, intCorrection As Integer)

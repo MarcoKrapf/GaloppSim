@@ -17,6 +17,6 @@ Option Explicit
 
 Private Sub UserForm_Initialize()
     'Display the UserForm in the center of the Window
-    Call basMainCode.PlaceUserFormInCenter(Me)
+    Call basAuxiliary.PlaceUserFormInCenter(Me)
 End Sub
 
