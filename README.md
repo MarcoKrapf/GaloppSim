@@ -3,6 +3,14 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 
 ## Version history
 
+### Version 149.00 (10 September 2018)
+* Ten races
+* Race info in a pop-up or on the worksheet
+* Race speed from normal to 5 times faster
+* Horse can refuse to run
+* AI Edition: Display in Excel or TV mode possible
+* Voice output possible for some information
+
 ### Version 148.96 (30 June 2018)
 * Race information extended including a race progress bar and the current leader
 * Distance of the race track markers can be adjusted
