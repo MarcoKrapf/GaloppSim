@@ -5,7 +5,7 @@ Option Private Module
 'This animation shows the original scene in the afternoon of 2 July 2017,
 'when the idea for programming the Excel horse racing simulator was born
 
-Public Sub PlayMovie2017(g_strTxt() As String, ActSheet As String)
+Public Sub PlayMovie2017(ActSheet As String)
     
     Dim m_wksCheck As Worksheet
     Dim strL As String 'Language of the picture texts (German or English)
@@ -34,17 +34,20 @@ Public Sub PlayMovie2017(g_strTxt() As String, ActSheet As String)
             .Activate
         End With
         
+        If g_strPlayMode = "AI" Then Call basAuxiliary.AI_ExcelModeStart
+        
     'Show a pop-up if the window size is too small for the movie
-        If Application.ActiveWindow.Height < 780 Or Application.ActiveWindow.Width < 1080 Then
-            'Set the button mode
-            g_strMsgButtons = "YesNo"
-            'Assign the text for the pop-up
-            g_strMsgCaption = g_strTxt(284)
-            g_strMsgText = g_strTxt(381) & vbNewLine & g_strTxt(382)
-            'Display the pop-up
-            frmMsg_MultiPurpose.Show
-            'Evaluate the return value
-            If g_strButtonPressed = "YES" Then Call BigPicExcelOptions 'Activate the full screen mode
+        If Application.ActiveWindow.Height < 780 Or Application.ActiveWindow.Width < 1080 _
+            And g_strExcelMode <> "TVfull" Then
+                'Set the button mode
+                g_strMsgButtons = "YesNo"
+                'Assign the text for the pop-up
+                g_strMsgCaption = GetTxt(g_arrTxt, "USERFORM004")
+                g_strMsgText = GetTxt(g_arrTxt, "MOVIE001") & vbNewLine & GetTxt(g_arrTxt, "MOVIE002")
+                'Display the pop-up
+                frmMsg_MultiPurpose.Show
+                'Evaluate the return value
+                If g_strButtonPressed = "YES" Then Call ExcelOptionsTVfull 'Activate the full screen mode
         End If
     
     'Prepare the speaker
@@ -54,8 +57,7 @@ Public Sub PlayMovie2017(g_strTxt() As String, ActSheet As String)
     g_wksMovie.Range(Cells(2, 28), Cells(5, 51)).Font.name = "Arial Rounded MT Bold"
     g_wksMovie.Range(Cells(2, 22), Cells(4, 28)).Font.name = "Arial Rounded MT Bold"
     With g_wksMovie.Cells(20, 59)
-        .Font.FontStyle = "Italic"
-        .Value = g_strTxt(400)
+        .Value = GetTxt(g_arrTxt, "MOVIE005")
     End With
     
     'Play the title sequence
@@ -81,69 +83,72 @@ Public Sub PlayMovie2017(g_strTxt() As String, ActSheet As String)
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_01"))
     Call Wait("0:00:02")
     Call Opening("0:00:04", "0:00:02")
-    Call Speaker("0:00:02", "0:00:01", g_strTxt(401))
+    Call Speaker("0:00:02", "0:00:01", GetTxt(g_arrTxt, "MOVIE006"))
     
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_02"))
     Call ShowBetSlip
-    Call SpeakMatjes("0:00:02", "0:00:02", g_strTxt(402))
+    Call SpeakMatjes("0:00:02", "0:00:02", GetTxt(g_arrTxt, "MOVIE007"))
+    If g_blnSpeech Then Call SpeechOut(GetTxt(g_arrTxt, "MOVIE007"))
     Call HideBetSlip
     
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_01"))
     Call Wait("0:00:02")
-    Call Speaker("0:00:02", "0:00:01", g_strTxt(403))
-    Call Speaker("0:00:02", "0:00:01", g_strTxt(404), g_strTxt(405))
-    Call Speaker("0:00:02", "0:00:00", g_strTxt(406), g_strTxt(407))
-    Call Speaker("0:00:02", "0:00:00", g_strTxt(408))
-    Call Speaker("0:00:02", "0:00:00", g_strTxt(409))
+    Call Speaker("0:00:02", "0:00:01", GetTxt(g_arrTxt, "MOVIE008"))
+    Call Speaker("0:00:02", "0:00:01", GetTxt(g_arrTxt, "MOVIE009"), GetTxt(g_arrTxt, "MOVIE010"))
+    Call Speaker("0:00:02", "0:00:00", GetTxt(g_arrTxt, "MOVIE011"), GetTxt(g_arrTxt, "MOVIE012"))
+'    Call Speaker("0:00:02", "0:00:00", GetTxt(g_arrTxt, "MOVIE013"))
+    Call Speaker("0:00:02", "0:00:00", GetTxt(g_arrTxt, "MOVIE014"))
     
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_03"))
-    Call Speaker("0:00:02", "0:00:00", g_strTxt(410), g_strTxt(411))
+    Call Speaker("0:00:02", "0:00:00", GetTxt(g_arrTxt, "MOVIE015"), GetTxt(g_arrTxt, "MOVIE016"))
     
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_04"))
-    Call Speaker("0:00:02", "0:00:00", g_strTxt(412), g_strTxt(413))
+    Call Speaker("0:00:02", "0:00:00", GetTxt(g_arrTxt, "MOVIE017"), GetTxt(g_arrTxt, "MOVIE018"))
     
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_05"))
-    Call Speaker("0:00:02", "0:00:00", g_strTxt(414), g_strTxt(415))
+    Call Speaker("0:00:02", "0:00:00", GetTxt(g_arrTxt, "MOVIE019"), GetTxt(g_arrTxt, "MOVIE020"))
     
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_06"))
-    Call Speaker("0:00:02", "0:00:00", g_strTxt(416))
+    Call Speaker("0:00:02", "0:00:00", GetTxt(g_arrTxt, "MOVIE021"))
     
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_07"))
-    Call Speaker("0:00:02", "0:00:00", g_strTxt(417), g_strTxt(418))
+    Call Speaker("0:00:02", "0:00:00", GetTxt(g_arrTxt, "MOVIE022"), GetTxt(g_arrTxt, "MOVIE023"))
     
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_01"))
-    Call Speaker("0:00:02", "0:00:00", g_strTxt(419))
-    Call Speaker("0:00:02", "0:00:00", g_strTxt(420), g_strTxt(421))
-    Call Speaker("0:00:02", "0:00:00", g_strTxt(422))
-    Call Speaker("0:00:02", "0:00:00", g_strTxt(423), g_strTxt(424))
-    Call Speaker("0:00:02", "0:00:00", g_strTxt(425), g_strTxt(426))
-    Call Speaker("0:00:02", "0:00:00", g_strTxt(427), g_strTxt(428))
+    Call Speaker("0:00:02", "0:00:00", GetTxt(g_arrTxt, "MOVIE024"))
+    Call Speaker("0:00:02", "0:00:00", GetTxt(g_arrTxt, "MOVIE025"), GetTxt(g_arrTxt, "MOVIE026"))
+    Call Speaker("0:00:02", "0:00:00", GetTxt(g_arrTxt, "MOVIE027"))
+    Call Speaker("0:00:02", "0:00:00", GetTxt(g_arrTxt, "MOVIE028"), GetTxt(g_arrTxt, "MOVIE029"))
+    Call Speaker("0:00:02", "0:00:00", GetTxt(g_arrTxt, "MOVIE030"), GetTxt(g_arrTxt, "MOVIE031"))
+    Call Speaker("0:00:02", "0:00:00", GetTxt(g_arrTxt, "MOVIE032"), GetTxt(g_arrTxt, "MOVIE033"))
     
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_08"))
-    Call Speaker("0:00:02", "0:00:00", g_strTxt(429))
+    Call Speaker("0:00:02", "0:00:00", GetTxt(g_arrTxt, "MOVIE034"))
     
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_09"))
-    Call Speaker("0:00:02", "0:00:00", g_strTxt(430), g_strTxt(431))
+    Call Speaker("0:00:02", "0:00:00", GetTxt(g_arrTxt, "MOVIE035"), GetTxt(g_arrTxt, "MOVIE036"))
     
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_10"))
-    Call Speaker("0:00:02", "0:00:00", g_strTxt(432), g_strTxt(433))
+    Call Speaker("0:00:02", "0:00:00", GetTxt(g_arrTxt, "MOVIE037"), GetTxt(g_arrTxt, "MOVIE038"))
     
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_11"))
     g_wksMovie.Range(Cells(1, 5), Cells(7, 8)).Font.FontStyle = "Bold"
-    Call Speaker("0:00:02", "0:00:00", g_strTxt(434))
+    Call Speaker("0:00:02", "0:00:00", GetTxt(g_arrTxt, "MOVIE039"))
     
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_12"))
-    Call Speaker("0:00:02", "0:00:00", g_strTxt(435), g_strTxt(436))
+    Call Speaker("0:00:02", "0:00:00", GetTxt(g_arrTxt, "MOVIE040"), GetTxt(g_arrTxt, "MOVIE041"))
     
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_13"))
-    Call Speaker("0:00:02", "0:00:00", g_strTxt(437), g_strTxt(438))
+    Call Speaker("0:00:02", "0:00:00", GetTxt(g_arrTxt, "MOVIE042"), GetTxt(g_arrTxt, "MOVIE043"))
     g_wksMovie.Range(Cells(1, 5), Cells(7, 8)).Font.FontStyle = "Regular"
-    Call Speaker("0:00:02", "0:00:02", g_strTxt(439))
+    Call Speaker("0:00:02", "0:00:02", GetTxt(g_arrTxt, "MOVIE044"))
     
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_14"))
     Call Wait("0:00:02")
-    Call SpeakMatjes("0:00:04", "0:00:02", g_strTxt(440))
-    Call SpeakFlo("0:00:04", "0:00:02", g_strTxt(441))
+    Call SpeakMatjes("0:00:04", "0:00:02", GetTxt(g_arrTxt, "MOVIE045"))
+    If g_blnSpeech Then Call SpeechOut(GetTxt(g_arrTxt, "MOVIE045"))
+    Call SpeakFlo("0:00:04", "0:00:02", GetTxt(g_arrTxt, "MOVIE046"))
+    If g_blnSpeech Then Call SpeechOut(GetTxt(g_arrTxt, "MOVIE046"))
     
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_15"))
     Call Wait("0:00:02")
@@ -155,17 +160,7 @@ Public Sub PlayMovie2017(g_strTxt() As String, ActSheet As String)
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_A0BLACK"))
     Call Wait("0:00:01")
     
-    Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_Z0" & strL))
-    Call Wait("0:00:03")
-    Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_A0BLACK"))
-    Call Wait("0:00:01")
-    
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_Z1" & strL))
-    Call Wait("0:00:03")
-    Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_A0BLACK"))
-    Call Wait("0:00:01")
-    
-    Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_Z2"))
     Call Wait("0:00:03")
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_A0BLACK"))
     Call Wait("0:00:01")
@@ -176,16 +171,6 @@ Public Sub PlayMovie2017(g_strTxt() As String, ActSheet As String)
     Call Wait("0:00:01")
     
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_Z4" & strL))
-    Call Wait("0:00:03")
-    Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_A0BLACK"))
-    Call Wait("0:00:01")
-    
-    Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_Z5"))
-    Call Wait("0:00:03")
-    Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_A0BLACK"))
-    Call Wait("0:00:01")
-    
-    Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_Z6"))
     Call Wait("0:00:03")
     Call DrawPicture(basAuxiliary.GetPictureColumn("MOVIE1_A0BLACK"))
     Call Wait("0:00:01")
@@ -207,6 +192,9 @@ Public Sub PlayMovie2017(g_strTxt() As String, ActSheet As String)
 
     'If the full screen mode was activated: reset the Excel options
         If g_strButtonPressed = "YES" Then Call ResetExcelOptions
+        
+    'Reset AI Excel mode
+        If g_strPlayMode = "AI" Then Call basAuxiliary.AI_ExcelModeEnd
     
     'Jump to the main worksheet
         If g_strPlayMode = "RS" Then g_wksRace.Activate
@@ -313,8 +301,8 @@ End Sub
 
 Private Sub Opening(waitBefore As String, waitAfter As String)
     Application.ScreenUpdating = False 'Deactivate screen updating
-    Call WriteText(2, 38, g_strTxt(398))
-    Call WriteText(3, 38, g_strTxt(399))
+    Call WriteText(2, 38, GetTxt(g_arrTxt, "MOVIE003"))
+    Call WriteText(3, 38, GetTxt(g_arrTxt, "MOVIE004"))
     Application.ScreenUpdating = True 'Activate screen updating
     Application.Wait (Now + TimeValue(waitBefore))
     
@@ -342,4 +330,3 @@ End Sub
 Private Sub Wait(waitSeconds As String) 'Procedure for delay
     Application.Wait (Now + TimeValue(waitSeconds))
 End Sub
-
