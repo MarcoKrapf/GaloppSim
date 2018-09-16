@@ -1,5 +1,5 @@
 # GaloppSim
-The horse racing simulator is available as an [Excel Add-In (.xlam) file or a simple Workbook (.xlsm)](https://marco-krapf.de/excel/galoppsim) and takes you to different race tracks around the world for watching stunning race events.
+The horse racing simulator is available as an [Excel Add-In (.xlam) file or a simple Workbook (.xlsm)](https://galoppsim.racing/downloads/) and takes you to different race tracks around the world for watching stunning race events.
 
 ## Version history
 
