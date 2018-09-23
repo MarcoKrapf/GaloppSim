@@ -3,6 +3,10 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 
 ## Version history
 
+### Version 149.00 Service Pack 1 (23 September 2018)
+* Bugfixes
+* Additional race
+
 ### Version 149.00 (10 September 2018)
 * Ten races
 * Race info in a pop-up or on the worksheet
