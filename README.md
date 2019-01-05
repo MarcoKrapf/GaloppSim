@@ -3,6 +3,14 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 
 ## Version history
 
+### Version 149.10 (05 January 2019)
+* 15 races including a race in the Wadden Sea and a pig race
+* Horse names on the photo of the finish
+* Photo of the finish coloured or black-and-white
+* Race progress bar on the worksheet
+* Multicoloured runners possible
+* Improved rendering for Windows 10
+
 ### Version 149.00 Service Pack 1 (23 September 2018)
 * Bugfixes
 * Additional race
