@@ -3,6 +3,10 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 
 ## Version history
 
+### Version 150.00 (12 August 2019)
+* 18 races including a space race on Moon, Mars, Jupiter, Pluto and Saturn with alien attacks
+* Momentum display (relative speed of each horse compared to the others)
+
 ### Version 149.10 (05 January 2019)
 * 15 races including a race in the Wadden Sea and a pig race
 * Horse names on the photo of the finish
