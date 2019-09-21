@@ -63,7 +63,7 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 * 3,5" floppy disk shipping only
 
 ### Version 148.10 (22 November 2017)
-* Four races to choose
+* Four races
 * Placing bets (in this version only of type "Win")
 * Advertising on the race track
 * Highlighting the favorite (optional)
