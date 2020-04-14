@@ -25,6 +25,7 @@ Private Sub Workbook_Open()
         g_skipDelay = False 'Set true to skip delay commands (Application.Wait)
         g_errorLogPath = Environ("UserProfile") '& "\Desktop" 'Path for the error log file
         g_errorLogging = False 'Error logging on(true)/off(false)
+        g_payoutLogging = False 'Pay-out logging for bets on/off
     'If error logging is turned on: Activate a(ny) VBComponent to have a pane object.
     'This is needed to get the CodeModule name in the error handlers.
         If g_errorLogging = True Then
@@ -57,23 +58,29 @@ Private Sub Workbook_Open()
         Set g_wksTEXT = VBAProject_GaloppSim.Table_TEXT  'Take the internal name (CodeName)
         Set g_wksPIC = VBAProject_GaloppSim.Table_PIC
         Set g_wksTEC = VBAProject_GaloppSim.Table_TEC
-        'Alternative but less stable assignment:
-        'Set g_wksTEC = ThisWorkbook.Worksheets("TEC") 'Attenton: The external name (Worksheet name) could be changed by the user
+        
+'        'Alternative but less stable assignment:
+'        Set g_wksTEC = ThisWorkbook.Worksheets("TEC") 'Attenton: The external name (Worksheet name) could be changed by the user
 
     'Create objects of Class Modules
         Set objRace = New clsRace 'Object for the race data
         Set objOption = New clsOptions 'Object for the race and excel options
         Set objSpeed = New clsSpeed 'Object for speed data
+        Set objStat = New clsStatisctics 'Object for statistical data
         
     'Set the standard settings for the race options
         objOption.STOP_ALG = False
         objOption.EXCEL_MODE = "normal"
+        objOption.ZOOM_LEVEL = 3
         objOption.TACTICS = True
+        objOption.TACTICS_REVEAL_TAC = False
+        objOption.TACTICS_REVEAL_CURR = False
         objOption.REFUSE_RUN = True
+        objOption.REFUSAL_RATE = 100
         objOption.SLIPSTREAM = True
         objOption.SLIPSTREAM_DBL = False
         objOption.SLIPSTREAM_SHOW = False
-        objOption.FOCUSED_RUN = False
+        objOption.FOCUSED_RUN = enumCamera.standard
         objOption.HIGHLIGHT_FOC = True
         objOption.HOOFPRINTS = False
         objOption.NAMES_LEFT = True
@@ -97,12 +104,20 @@ Private Sub Workbook_Open()
         objOption.RACE_INFO_COL_F = vbBlack
         objOption.SPEED_FACTOR = 1
         objOption.MOMENTUM = False
+        objOption.MOMENTUM_REFRESHRATE = 4
         objOption.SPEECH = False
         objOption.TIDE = 1
         objOption.LUGWORMS = 1
         objOption.SPACE_PLANET = enumPlanets.moon
         objOption.SPACE_ALIENS = enumAliens.unfriendly
         objOption.SPACE_KIDNAPPINGRATE = 2
+        objOption.TRIBUNES = True
+        objOption.SPECTATORS = 0 'No spectators allowed during the Corona crisis
+        objOption.PARTICULATES_SLIDER = 3
+        objOption.COL_BACK = xlNone
+        objOption.COL_TEXT = vbBlack
+        objOption.COL_RANKINGS = vbWhite
+        objOption.DAYLIGHT = 0 'High noon (12:00)
         
     'Set the default path for GaloppSim files
         g_defaultPath = Application.UserLibraryPath
@@ -116,6 +131,9 @@ Private Sub Workbook_Open()
             'Bulgaria
             Case msoLanguageIDBulgarian
                 objOption.language = "BG"
+            'Russian speaking countries
+'            Case msoLanguageIDRussian, msoLanguageIDUkrainian
+'                objOption.LANGUAGE = "RU"
             'All other
             Case Else
                 objOption.language = "EN"
