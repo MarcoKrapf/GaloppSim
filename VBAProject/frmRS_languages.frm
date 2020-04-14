@@ -1,9 +1,9 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmRS_languages 
-   ClientHeight    =   3165
-   ClientLeft      =   120
-   ClientTop       =   450
-   ClientWidth     =   4560
+   ClientHeight    =   3036
+   ClientLeft      =   12
+   ClientTop       =   -72
+   ClientWidth     =   4752
    OleObjectBlob   =   "frmRS_languages.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End
@@ -21,6 +21,8 @@ Private Sub UserForm_Initialize()
     With Me
         'Captions
         .caption = g_c_tool
+        .Height = 178
+        .width = 242
         .fraRS_lan01.caption = GetText(g_arr_Text, "LANGUAGE001")
         .optRS_lan01.caption = GetText(g_arr_Text, "LANGUAGE002") 'German
         .optRS_lan02.caption = GetText(g_arr_Text, "LANGUAGE003") 'English

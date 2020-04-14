@@ -6,16 +6,6 @@ Option Private Module
 'which can be called by procedures in other modules
 '   Module basAuxiliary
 
-Declare Function GetSystemMetrics Lib "user32" (ByVal nIndex As Long) As Long
-'Get the screen width of the main screen
-Public Function GetScreenWidth() As Variant
-    GetScreenWidth = GetSystemMetrics(0) 'Width (pixels)
-End Function
-'Get the screen height of the main screen
-Public Function GetScreenHeight() As Variant
-    GetScreenHeight = GetSystemMetrics(1) 'Height (pixels)
-End Function
-
 'Open a website in the standard browser (if possible)
 Public Sub OpenURL(URL As String)
     On Error Resume Next 'Ignore the command if an error occures
@@ -28,8 +18,7 @@ Public Sub SendMail()
     Dim objMail As Object 'Shell object for the e-mail
     On Error Resume Next
     Set objMail = CreateObject("Shell.Application")
-    objMail.ShellExecute "mailto:" & g_c_email _
-        & "&subject=" & g_c_tool
+    objMail.ShellExecute "mailto:" & g_c_email
 End Sub
 
 'Place the pop-up in the center of the window
@@ -127,17 +116,93 @@ Public Sub PaintPicture(wksSource As Worksheet, wksTarget As Worksheet, ByVal pi
     Dim i As Long 'The 'local' variable i on procedure-level overrides the i from the calling procedure so there will be no trouble
     Dim j As Long, k As Long, m As Long 'If you write 'Dim j, k, m As Long' only m will be of type Long, all others are of type Variant
     
+    'Variables used for the ecstasy colour mode
+    Dim colHeavenPop As Long, colGrassPop As Long, colRandomPop As Long
+    colHeavenPop = PopArtColour(Int((16777215 - 0 + 1) * rnd + 0))
+    colGrassPop = PopArtColour(Int((16777215 - 0 + 1) * rnd + 0))
+    
+    'Variables used for the Random colour mode
+    Dim colHeaven As Long, colGrass As Long, colRandom As Long
+    colHeaven = Int((16777215 - 0 + 1) * rnd + 0)
+    colGrass = Int((16777215 - 0 + 1) * rnd + 0)
+            
     Application.ScreenUpdating = False 'Deactivate screen updating
         
     'Paint a picture
         k = GetColumn(wksSource, pic) 'Get the column with the colour data from the Worksheet "PIC"
         m = 2 'Initial row for reading the colour data for the picture
         
-        For i = top To rows
-            For j = left To cols
+        For i = top To top + rows - 1
+            For j = left To left + cols - 1
                 With wksTarget.Cells(i, j)
                     .Clear 'Clear the cell content
                     .Interior.color = wksSource.Cells(m, k).Value 'Format the cell with the background colour
+                
+                    'Take the colour mode into account
+                    Select Case g_strColourMode
+                        Case "POPART"
+                            If wksTarget.Cells(i, j).Interior.color > 0 And wksTarget.Cells(i, j).Interior.color < 16777215 Then _
+                            wksTarget.Cells(i, j).Interior.color = PopArtColour(wksTarget.Cells(i, j).Interior.color)
+                        Case "LSD"
+                            With wksTarget.Cells(i, j)
+                                Select Case .Interior.color
+                                    Case 0, 16777215 'No change
+                                    
+                                    Case 14726300 'Heaven
+                                        .Interior.color = colHeavenPop
+                                    Case 9359529 'Grass
+                                        .Interior.color = colGrassPop
+                                    Case Else
+                                        Do
+                                            colRandomPop = PopArtColour(Int((16777215 - 0 + 1) * rnd + 0))
+                                        Loop Until colRandomPop <> colHeavenPop And colRandomPop <> colGrassPop
+                                        .Interior.color = colRandomPop
+                                End Select
+                            End With
+                        Case "SMARTIES"
+                            With wksTarget.Cells(i, j)
+                                Select Case .Interior.color
+                                    Case 0, 16777215 'No change
+                                    
+                                    Case 14726300 'Heaven
+                                        .Interior.color = colHeaven
+                                    Case 9359529 'Grass
+                                        .Interior.color = colGrass
+                                    Case Else
+                                        Do
+                                            colRandom = Int((16777215 - 0 + 1) * rnd + 0)
+                                        Loop Until colRandom <> colHeaven And colRandom <> colGrass
+                                        .Interior.color = colRandom
+                                End Select
+                            End With
+                        Case "TV1960"
+                            wksTarget.Cells(i, j).Interior.color = GreyToLong(CInt(RGBtoGrey(CLng(wksTarget.Cells(i, j).Interior.color))))
+                        Case "DARKMODE"
+                            Select Case .Interior.color
+                                Case 0  'Black: change to white
+                                    wksTarget.Cells(i, j).Interior.color = 16777215
+                                Case 16777215  'White: change to black
+                                    wksTarget.Cells(i, j).Interior.color = 0
+'                                Case 0, 16777215 'No change
+                                
+                                Case 14726300 'Heaven
+                                    .Interior.color = 2697513 'Dark grey
+                                Case 52377 'Grass
+                                    .Interior.color = 0 'Black
+                                Case Else
+                                    wksTarget.Cells(i, j).Interior.color = DarkModeColour(wksTarget.Cells(i, j).Interior.color)
+                            End Select
+                        Case "24H"
+                            With wksTarget.Cells(i, j)
+                                Select Case .Interior.color
+                                    Case 14726300 'Heaven
+                                        .Interior.color = objOption.DAYLIGHT_COL
+                                    Case Else
+                                        wksTarget.Cells(i, j).Interior.color = DuskDawn(wksTarget.Cells(i, j).Interior.color, Abs(22 * objOption.DAYLIGHT))
+                                End Select
+                            End With
+                    End Select
+                
                 End With
                 m = m + 1 'Next row on the Worksheet "PIC"
             Next j
@@ -169,27 +234,31 @@ Public Function ColPick(current As Long) As Long
 End Function
 
 'Formattings: Race information on the worksheet
-Public Sub RaceInfoWorksheet(colBack As Long, colFore As Long, top, show As Boolean)
+Public Sub RaceInfoWorksheet(colBack As Long, colFore As Long, topRows, show As Boolean)
+    
     'Colours
-    With g_wksRace.Range(Cells(1 + top, 1), Cells(3 + top, 12))
+    With g_wksRace.Range(Cells(1 + topRows, 1), Cells(3 + topRows, 13))
         .Interior.color = colBack
         .Font.color = colFore
+        If objRace.SPECIAL = "PARTICULATES" Then .Interior.Pattern = objOption.PARTICULATES_PATTERN
     End With
+    
     'Current leader in the race
-    With g_wksRace.Cells(1 + top, 2)
+    With g_wksRace.Cells(1 + topRows, 2) '"The current leader is"
         .Font.name = "Arial Black"
         .Font.size = 8
         .Font.Bold = True
         .Value = ""
     End With
-    With g_wksRace.Cells(2 + top, 10)
+    With g_wksRace.Cells(2 + topRows, 11) 'Horse name
         .Font.name = "Arial Black"
         .Font.size = 11
         .Font.Bold = True
         .Value = ""
     End With
+    
     'Race distance (metres run)
-    With g_wksRace.Cells(3 + top, 11)
+    With g_wksRace.Cells(3 + topRows, 11)
         .Font.name = "Arial Black"
         .Font.size = objOption.ZOOM_LEVEL + 5
         .IndentLevel = 1 'Text indented
@@ -197,20 +266,53 @@ Public Sub RaceInfoWorksheet(colBack As Long, colFore As Long, top, show As Bool
         .VerticalAlignment = xlCenter
         .Value = ""
     End With
+    
     'Race progress bar
     If objOption.RACE_INFO_PROGRESS Then
-        With g_wksRace.Cells(3 + top, 12)
-            .Font.name = "Arial"
-            .Font.size = 11
-            .Value = ""
-            If show = True Then
-                .Interior.color = colFore
-                .Font.color = colBack
-                .BorderAround Weight:=xlThick, color:=colFore 'Draw a cell frame
-            Else
-                .Borders.LineStyle = xlNone 'Delete the cell frame
-            End If
-        End With
+    
+        If show = True Then
+    
+            Dim t As Double, h As Double, l As Double, w As Double
+            With Cells(3 + topRows, 12)
+                t = .top
+                h = .Height
+                l = .left
+                w = .width - 1 'Show the full frame when scrolling
+            End With
+            
+            Set g_shpFrame = g_wksRace.Shapes.AddShape(msoShapeRectangle, l, t, w, h)
+
+            With g_shpFrame
+                .Line.Weight = 2
+                .Line.ForeColor.RGB = RGB( _
+                            objOption.RACE_INFO_COL_F Mod 256, _
+                            (objOption.RACE_INFO_COL_F \ 256) Mod 256, _
+                            (objOption.RACE_INFO_COL_F \ 256 \ 256) Mod 256)
+                                'Extract RGB values from Long value
+                .Fill.ForeColor.RGB = RGB( _
+                            objOption.RACE_INFO_COL_B Mod 256, _
+                            (objOption.RACE_INFO_COL_B \ 256) Mod 256, _
+                            (objOption.RACE_INFO_COL_B \ 256 \ 256) Mod 256)
+                                'Extract RGB values from Long value
+                .name = "shpRaceProgressFrame"
+            End With
+    
+            Set g_shpBar = g_wksRace.Shapes.AddShape(msoShapeRectangle, l, t, 0, h)
+            With g_shpBar
+                .Line.Visible = msoFalse
+                .Fill.ForeColor.RGB = RGB( _
+                            objOption.RACE_INFO_COL_F Mod 256, _
+                            (objOption.RACE_INFO_COL_F \ 256) Mod 256, _
+                            (objOption.RACE_INFO_COL_F \ 256 \ 256) Mod 256)
+                                'Extract RGB values from Long value
+                .name = "shpRaceProgressBar"
+            End With
+            
+        Else
+            g_shpBar.Delete
+            g_shpFrame.Delete
+            
+        End If
     End If
 End Sub
 
@@ -256,6 +358,104 @@ End Function
 'in Excel data type 'Long'
 Public Function GreyToLong(lngGrey As Long) As Long
     GreyToLong = lngGrey + lngGrey * 256 + lngGrey * 256 ^ 2
+End Function
+
+'Extract RED value
+Public Function GetRed(lngColor As Long)
+    GetRed = lngColor Mod 256
+End Function
+'Extract GREEN value
+Public Function GetGreen(lngColor As Long)
+    GetGreen = (lngColor \ 256) Mod 256
+End Function
+'Extract BLUE value
+Public Function GetBlue(lngColor As Long)
+    GetBlue = (lngColor \ 256 ^ 2) Mod 256
+End Function
+
+Public Function DuskDawn(ByVal lngColor As Long, intPercentage As Integer)
+    DuskDawn = RGB(GetRed(lngColor) * (100 - intPercentage) / 100, _
+                    GetGreen(lngColor) * (100 - intPercentage) / 100, _
+                    GetBlue(lngColor) * (100 - intPercentage) / 100)
+End Function
+
+Public Function BrightLight(ByVal lngColor As Long, intPercentage As Integer)
+    BrightLight = RGB(GetRed(lngColor) + (255 - GetRed(lngColor)) * intPercentage / 100, _
+                    GetGreen(lngColor) + (255 - GetGreen(lngColor)) * intPercentage / 100, _
+                    GetBlue(lngColor) + (255 - GetBlue(lngColor)) * intPercentage / 100)
+End Function
+
+'Function that returns the nearest PopArt colour
+'to a given input colour
+Public Function PopArtColour(ByVal inputColour As Long) As Long
+    Dim i As Integer
+    Dim lngPopArt(0 To 7) As Long 'Array mit den Farben
+
+    lngPopArt(0) = 39423 'Orange (dummy)
+    lngPopArt(1) = 39423 'Orange
+    lngPopArt(2) = 65280 'Green
+    lngPopArt(3) = 195581 'Yellow
+    lngPopArt(4) = 6684927 'Red
+    lngPopArt(5) = 10040319 'Magenta
+    lngPopArt(6) = 16653825 'Blue
+    lngPopArt(7) = 16776960 'Cyan
+    
+    For i = 1 To 7
+        If lngPopArt(i) >= inputColour Then
+        
+            If Abs(inputColour - lngPopArt(i)) < Abs(inputColour - lngPopArt(i - 1)) Then _
+                PopArtColour = lngPopArt(i) Else PopArtColour = lngPopArt(i - 1)
+
+            Exit For
+            
+            PopArtColour = lngPopArt(7)
+        End If
+    Next
+    
+    If PopArtColour = 0 Then PopArtColour = lngPopArt(7)
+End Function
+
+'Function that returns the nearest DarkMode colour
+'to a given input colour
+Public Function DarkModeColour(ByVal inputColour As Long) As Long
+    Dim i As Integer
+    Dim lngDarkMode(0 To 20) As Long 'Array mit den Farben
+
+    lngDarkMode(0) = 5723136 '(Dummy)
+    lngDarkMode(1) = 5723136
+    lngDarkMode(2) = 7631617
+    lngDarkMode(3) = 7864345
+    lngDarkMode(4) = 8816385
+    lngDarkMode(5) = 9606401
+    lngDarkMode(6) = 9830439
+    lngDarkMode(7) = 10068481
+    lngDarkMode(8) = 10924800
+    lngDarkMode(9) = 11730999
+    lngDarkMode(10) = 11846656
+    lngDarkMode(11) = 12966404
+    lngDarkMode(12) = 13697099
+    lngDarkMode(13) = 14610288
+    lngDarkMode(14) = 15597666
+    lngDarkMode(15) = 16056264
+    lngDarkMode(16) = 16536990
+    lngDarkMode(17) = 16549563
+    lngDarkMode(18) = 16589439
+    lngDarkMode(19) = 16627671
+    lngDarkMode(20) = 16705522
+    
+    For i = 1 To 20
+        If lngDarkMode(i) >= inputColour Then
+        
+            If Abs(inputColour - lngDarkMode(i)) < Abs(inputColour - lngDarkMode(i - 1)) Then _
+                DarkModeColour = lngDarkMode(i) Else DarkModeColour = lngDarkMode(i - 1)
+
+            Exit For
+            
+            DarkModeColour = lngDarkMode(20)
+        End If
+    Next
+    
+    If DarkModeColour = 0 Then DarkModeColour = lngDarkMode(20)
 End Function
 
 'Voice output of a text
@@ -416,4 +616,39 @@ Private Sub AlignButtonMsg(cmdButton As Object, strText As String, intCorrection
         .top = frmMsg_MultiPurpose.lblMsg01.top + frmMsg_MultiPurpose.lblMsg01.Height + 30
         .left = frmMsg_MultiPurpose.lblMsg01.left + frmMsg_MultiPurpose.lblMsg01.width - .width - intCorrection
     End With
+End Sub
+
+Public Sub GetColours_colMode()
+    'Override settings dependent on the colour mode
+    Select Case g_strColourMode
+        Case "DARKMODE"
+            objOption.COL_BACK = vbBlack
+            objOption.COL_TEXT = vbWhite
+            objOption.COL_RANKINGS = vbBlack
+        Case "24H"
+            objOption.DAYLIGHT = frmColourMode.scr24h.Value
+            objOption.COL_BACK = objOption.DAYLIGHT_COL
+            objOption.COL_TEXT = vbBlack
+            objOption.COL_RANKINGS = objOption.DAYLIGHT_COL
+        Case Else
+            objOption.COL_BACK = xlNone
+            objOption.COL_TEXT = vbBlack
+            objOption.COL_RANKINGS = vbWhite
+    End Select
+End Sub
+
+Sub GetColours_specRace()
+    'Override settings dependent on the selected race
+    Select Case objRace.RACE_ID
+        Case "SPACE"
+            objOption.COL_BACK = vbBlack
+            objOption.COL_TEXT = vbWhite
+            objOption.COL_RANKINGS = vbBlack
+        Case "WATT18"
+            objOption.COL_BACK = 11573124
+            objOption.COL_TEXT = vbBlack
+'        Case Else
+'            objOption.COL_BACK = xlNone
+'            objOption.COL_TEXT = vbBlack
+    End Select
 End Sub

@@ -1,9 +1,9 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmStart 
-   ClientHeight    =   5640
-   ClientLeft      =   120
-   ClientTop       =   450
-   ClientWidth     =   11115
+   ClientHeight    =   5712
+   ClientLeft      =   -312
+   ClientTop       =   -1620
+   ClientWidth     =   11184
    OleObjectBlob   =   "frmStart.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End
@@ -35,6 +35,13 @@ Private Sub UserForm_Initialize()
                 .caption = GetText(g_arr_Text, "RACESPEC001")
             End With
     End Select
+    Select Case objRace.SPECIAL
+        Case "PARTICULATES" 'Particulates in the air
+            With cmdS4
+                .Visible = True
+                .caption = GetText(g_arr_Text, "RACESPEC001")
+            End With
+    End Select
     
     'Hide the speed section if it should not be displayed
     Select Case objRace.RACE_ID
@@ -61,28 +68,28 @@ Private Sub UserForm_Initialize()
     
     'Show the "Horse in focus" DropDown if the Focused Run mode is activated
     With Me
-       .lblFocus.Visible = objOption.FOCUSED_RUN 'Label visible = TRUE or FALSE
+       .lblFocus.Visible = (objOption.FOCUSED_RUN = enumCamera.focus_horse) 'Label visibility
        'Horse preview (8 segments from left(1) to right(8))
-       .lblFocusColor1.Visible = objOption.FOCUSED_RUN 'Segment visible = TRUE or FALSE
+       .lblFocusColor1.Visible = (objOption.FOCUSED_RUN = enumCamera.focus_horse) 'Segment visibility
        .lblFocusColor1.caption = "" 'no text
-       .lblFocusColor2.Visible = objOption.FOCUSED_RUN
+       .lblFocusColor2.Visible = (objOption.FOCUSED_RUN = enumCamera.focus_horse)
        .lblFocusColor2.caption = "" 'no text
-       .lblFocusColor3.Visible = objOption.FOCUSED_RUN
+       .lblFocusColor3.Visible = (objOption.FOCUSED_RUN = enumCamera.focus_horse)
        .lblFocusColor3.caption = "" 'no text
-       .lblFocusColor4.Visible = objOption.FOCUSED_RUN
+       .lblFocusColor4.Visible = (objOption.FOCUSED_RUN = enumCamera.focus_horse)
        .lblFocusColor4.caption = "" 'no text
-       .lblFocusColor5.Visible = objOption.FOCUSED_RUN
+       .lblFocusColor5.Visible = (objOption.FOCUSED_RUN = enumCamera.focus_horse)
        .lblFocusColor5.caption = "" 'no text
-       .lblFocusColor6.Visible = objOption.FOCUSED_RUN
+       .lblFocusColor6.Visible = (objOption.FOCUSED_RUN = enumCamera.focus_horse)
        .lblFocusColor6.caption = "" 'no text
-       .lblFocusColor7.Visible = objOption.FOCUSED_RUN
+       .lblFocusColor7.Visible = (objOption.FOCUSED_RUN = enumCamera.focus_horse)
        .lblFocusColor7.caption = "" 'no text
-       .lblFocusColor8.Visible = objOption.FOCUSED_RUN
+       .lblFocusColor8.Visible = (objOption.FOCUSED_RUN = enumCamera.focus_horse)
        .lblFocusColor8.caption = "" 'no text
        .lblFocusBorder.Visible = False
        With .cboFocus 'DropDown with the horses
             .Clear
-            .Visible = objOption.FOCUSED_RUN 'ComboBox visible = True Or False
+            .Visible = (objOption.FOCUSED_RUN = enumCamera.focus_horse) 'ComboBox visibility
             .ColumnCount = 2 'Provide two columns for the horse name and number
             .ColumnWidths = "120 Pt;0 Pt" '120 pixels for the name, 0 for the number
             .Style = fmStyleDropDownList 'Allow only values from the item list, no free entries
@@ -90,7 +97,7 @@ Private Sub UserForm_Initialize()
     End With
 
     'Populate the "Horse in focus" DropDown with horses
-    If objOption.FOCUSED_RUN Then
+    If objOption.FOCUSED_RUN = enumCamera.focus_horse Then
         objOption.FOCUSED_NR = 0 'Reset the focused horse
         For i = 2 To g_wksRaceData.Cells(rows.count, 6).End(xlUp).row 'Find the last row in the STATUS column of the race sheet
             If g_wksRaceData.Cells(i, 6).Value = "START" Then 'Consider only horses that are starting
@@ -124,17 +131,17 @@ End Sub
 Private Sub cmdS4_Click()
     Select Case objRace.TRACK_SURFACE
         Case "M" 'Mudflats race
-            With frmTrackSettingsMudflats 'Pop-up
-                .caption = objRace.TRACK_SURFACE_TEXT
-                .show (vbModal)
-            End With
+            frmTrackSettingsMudflats.show (vbModal) 'Pop-up
         Case "MOON", "MARS", "JUPITER", "PLUTO", "SATURN" 'Space race
-            With frmTracksSpaceRace 'Pop-up
-                .caption = objRace.TRACK_SURFACE_TEXT
-                .show (vbModal)
-            End With
+            frmTrackSettingsSpaceRace.show (vbModal) 'Pop-up
         Case Else
     End Select
+    
+    Select Case objRace.SPECIAL
+        Case "PARTICULATES" 'Particulates in the air
+            frmTrackSettingsAirQuality.show (vbModal) 'Pop-up
+    End Select
+    
 End Sub
 
 'Click on the ListBox with the bet slips
@@ -151,10 +158,10 @@ End Sub
 'Click on "Start the race"
 Private Sub cmdS2_Click()
     'In case of Focused Run mode: Check whether a horse in focus is selected
-    If objOption.FOCUSED_RUN = True And objOption.FOCUSED_NR = 0 Then
+    If objOption.FOCUSED_RUN = enumCamera.focus_horse And objOption.FOCUSED_NR = 0 Then
         Call ShowInfoPopup(g_c_tool, _
             g_arr_Grammar(1) & " " & GetText(g_arr_Text, "START011") _
-            , True, vbModal)
+            , True, vbModal, 24)
         Exit Sub
     End If
     
@@ -223,7 +230,6 @@ Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
         If g_enumButton = enumButton.yes Then '>>Yes<< clicked
             objRace.STARTED = False
             If g_strPlayMode = "RS" Then Call RS_MenuAreaShow(False)
-            If g_strPlayMode = "AI" Then Call AI_ExcelModeEnd
         Else '>>No<< clicked
             Cancel = 1 'Don´t close the pop-up
         End If

@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmRS_navigation 
    Caption         =   "[Run Simple edition]"
-   ClientHeight    =   1920
-   ClientLeft      =   120
-   ClientTop       =   450
-   ClientWidth     =   6480
+   ClientHeight    =   3036
+   ClientLeft      =   132
+   ClientTop       =   420
+   ClientWidth     =   9588
    OleObjectBlob   =   "frmRS_navigation.frx":0000
    ShowModal       =   0   'False
    StartUpPosition =   1  'Fenstermitte
@@ -21,7 +21,11 @@ Option Explicit
 
 'Preparation of the pop-up
 Private Sub UserForm_Initialize()
-    Me.caption = GetText(g_arr_Text, "USERFORM005")
+    With Me
+        .caption = GetText(g_arr_Text, "USERFORM005")
+        .Height = 124
+        .width = 335
+    End With
     'Command buttons
     With cmdNavigation
         .caption = GetText(g_arr_Text, "NAVI001")

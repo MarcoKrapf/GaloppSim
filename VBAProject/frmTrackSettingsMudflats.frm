@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmTrackSettingsMudflats 
    Caption         =   "[Race specific settings]"
-   ClientHeight    =   3030
-   ClientLeft      =   120
-   ClientTop       =   450
-   ClientWidth     =   6735
+   ClientHeight    =   2520
+   ClientLeft      =   12
+   ClientTop       =   -12
+   ClientWidth     =   5340
    OleObjectBlob   =   "frmTrackSettingsMudflats.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End
@@ -20,6 +20,11 @@ Option Explicit
 
 Private Sub UserForm_Initialize()
 
+    With Me
+        .Height = 185
+        .width = 356
+    End With
+    
     Call LabelCaptions
     
     With Me
@@ -60,8 +65,8 @@ End Sub
 'Label captions
 Private Sub LabelCaptions()
     With Me
-        .caption = objRace.TRACK_SURFACE_TEXT
-        .lblMud01.caption = GetText(g_arr_Text, "RACESPEC001")
+        .caption = GetText(g_arr_Text, "RACESPEC001")
+        .lblMud01.caption = GetText(g_arr_Text, "TRACK005")
         .lblMud02.caption = GetText(g_arr_Text, "RACESPEC002") & ": " & scrMud02.Value & GetText(g_arr_Text, "RACESPEC004") 'Sea level (cm)
         .lblMud03.caption = GetText(g_arr_Text, "RACESPEC003") & ": " & scrMud01.Value & "%" 'Lugworm population (%)
     End With
