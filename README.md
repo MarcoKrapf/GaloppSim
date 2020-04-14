@@ -11,7 +11,6 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 * Seven colour modes (Light Mode, Dark Mode, Pop Art, Psychedelic Art, Smartie Art, TV 1960 and 24 hours)
 * Race tactics improved
 * Tactics revelation option
-* Momentum to display the relative race speed
 
 ### Version 150.00 (12 August 2019)
 * 18 races including a space race on Moon, Mars, Jupiter, Pluto and Saturn with alien attacks
