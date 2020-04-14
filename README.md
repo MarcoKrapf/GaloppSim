@@ -1,7 +1,17 @@
 # GaloppSim
-The horse racing simulator is available as an [Excel Add-In (.xlam) file or a simple Workbook (.xlsm)](https://galoppsim.racing/downloads/) and takes you to different race tracks around the world for watching stunning race events.
+The horse racing simulator is available as an [Excel Add-In (.xlam) file or a simple Workbook (.xlsm)](https://galoppsim.racing/downloads/) and takes you to different race tracks around the world for watching stunning race events. This code only includes the RS Edition.
 
 ## Version history
+
+### Version 150.50C (13 April 2020)
+* 20 races including a Corona race with widened start boxes and a race with fine dust in the air
+* Graphical elements along the track (tribunes, buildings, trees, food and beverage etc.)
+* Six betting types (Win, Show, 2 sur 4, Exacta, Trifecta, Superfecta)
+* Extra camera mode to always focus the leader
+* Seven colour modes (Light Mode, Dark Mode, Pop Art, Psychedelic Art, Smartie Art, TV 1960 and 24 hours)
+* Race tactics improved
+* Tactics revelation option
+* Momentum to display the relative race speed
 
 ### Version 150.00 (12 August 2019)
 * 18 races including a space race on Moon, Mars, Jupiter, Pluto and Saturn with alien attacks
@@ -42,7 +52,7 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 * Six races, one of them on a snow track
 * Photo of the finish in greater precision (1/10 meter)
 * Two types of racing tactics
-* Focused Run mode
+* Focused Run mode to always move the camera with a selected horse
 * Three zoom levels of the racetrack
 * Zoom level recommendation depending on screen size and chosen race
 * Evaluation of the betting slips reengineered
@@ -86,9 +96,8 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 
 ### Planned for further releases
 * More racing types (jump racing, endurance racing...)
-* More graphical elements (tribune, audience...)
-* Racing incidents
-* Race editor
 * Replay of the finish / of the whole race
 * Saving options for races
+* Racing incidents
+* Race editor
 * More languages
