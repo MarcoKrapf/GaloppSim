@@ -3,6 +3,12 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 
 ## Version history
 
+### Version 151.00 (09 August 2020)
+* 22 races
+* 141 different race tactics
+* Auto zoom function for perfect fit on all screens
+* Special developer function for Machine Learning
+
 ### Version 150.50C (13 April 2020)
 * 20 races including a Corona race with widened start boxes and a race with fine dust in the air
 * Graphical elements along the track (tribunes, buildings, trees, food and beverage etc.)
