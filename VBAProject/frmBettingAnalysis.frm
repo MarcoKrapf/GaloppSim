@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmBettingAnalysis 
    Caption         =   "[Caption]"
-   ClientHeight    =   5448
+   ClientHeight    =   5808
    ClientLeft      =   -48
    ClientTop       =   -168
-   ClientWidth     =   8988
+   ClientWidth     =   8328
    OleObjectBlob   =   "frmBettingAnalysis.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End

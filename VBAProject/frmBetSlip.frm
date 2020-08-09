@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmBetSlip 
    Caption         =   "[Name]"
-   ClientHeight    =   5544
-   ClientLeft      =   -1524
-   ClientTop       =   -6792
-   ClientWidth     =   14844
+   ClientHeight    =   5520
+   ClientLeft      =   -1512
+   ClientTop       =   -6696
+   ClientWidth     =   14376
    OleObjectBlob   =   "frmBetSlip.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End

@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmColourMode 
    Caption         =   "[COLOUR MODE]"
-   ClientHeight    =   5136
-   ClientLeft      =   -216
-   ClientTop       =   -1008
-   ClientWidth     =   11916
+   ClientHeight    =   4920
+   ClientLeft      =   -312
+   ClientTop       =   -1488
+   ClientWidth     =   10992
    OleObjectBlob   =   "frmColourMode.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End

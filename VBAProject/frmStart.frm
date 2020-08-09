@@ -1,9 +1,9 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmStart 
-   ClientHeight    =   5712
-   ClientLeft      =   -312
-   ClientTop       =   -1620
-   ClientWidth     =   11184
+   ClientHeight    =   5472
+   ClientLeft      =   -336
+   ClientTop       =   -1716
+   ClientWidth     =   9768
    OleObjectBlob   =   "frmStart.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End
@@ -230,6 +230,7 @@ Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
         If g_enumButton = enumButton.yes Then '>>Yes<< clicked
             objRace.STARTED = False
             If g_strPlayMode = "RS" Then Call RS_MenuAreaShow(False)
+            If g_strPlayMode = "AI" Then Call AI_ExcelModeEnd
         Else '>>No<< clicked
             Cancel = 1 'Don´t close the pop-up
         End If

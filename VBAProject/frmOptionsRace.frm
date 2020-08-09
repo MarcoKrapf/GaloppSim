@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmOptionsRace 
    Caption         =   "[Race options]"
-   ClientHeight    =   7920
-   ClientLeft      =   -312
-   ClientTop       =   -1380
-   ClientWidth     =   13152
+   ClientHeight    =   7020
+   ClientLeft      =   -684
+   ClientTop       =   -3012
+   ClientWidth     =   11460
    OleObjectBlob   =   "frmOptionsRace.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End
@@ -24,13 +24,6 @@ Private Sub UserForm_Initialize()
         Call basMainCode.GetAnimalGrammar
     
     'Settings of the sliders
-        'Zoom level slider
-        With scrRS_ro01
-            .min = 1 'Minumum value
-            .max = 3 'Maximum value
-            .SmallChange = 1 'Value change when using the arrows
-            .LargeChange = 1 'Value change when clicking inside the slider
-        End With
         'Metres
         With scrRS_ro02
             .min = 50 'Minumum value
@@ -51,9 +44,7 @@ Private Sub UserForm_Initialize()
             .max = 100 'Maximum value
             .SmallChange = 25 'value change when using the arrows
             .LargeChange = 25 'value change when clicking inside the slider
-            .Enabled = False 'No spectators allowed during the Corona crisis
         End With
-        
         'Momentum speed bars refresh rate
         With scrMomRefr
             .min = 1 'Minumum value
@@ -73,13 +64,9 @@ Private Sub UserForm_Initialize()
         'Toggle button for the colours of the photo of the finish
          togRS_ro01 = objOption.PHOTO_BW
          Call togRS_ro01_Click
-
-    'Draw the horse size preview
-        lblscrRS_ro01.width = basMainCode.HorseSizePreview(objOption.ZOOM_LEVEL)(0)
-        lblscrRS_ro01.Height = basMainCode.HorseSizePreview(objOption.ZOOM_LEVEL)(1)
     
     With Me
-        .Height = 550
+        .Height = 545
         .width = 685
         'Captions
         .caption = GetText(g_arr_Text, "USERFORM001")
@@ -109,8 +96,6 @@ Private Sub UserForm_Initialize()
         .opt_foc03.caption = GetText(g_arr_Text, "RACEOPT057")
         .cmdRS_ro01.caption = GetText(g_arr_Text, "BTN014")
         .lblRS_ro08.caption = GetText(g_arr_Text, "RACEOPT035")
-        .fraRS_ro02.caption = GetText(g_arr_Text, "ZOOM001") & ": " & ZoomLevelText(objOption.ZOOM_LEVEL)
-        .lblscrRS_ro02.caption = GetText(g_arr_Text, "ZOOM006") & " " & g_arr_Grammar(5)
         .fraRS_ro07.caption = GetText(g_arr_Text, "RACEOPT036") & " " _
                                 & GetText(g_arr_Text, "RACE020") & " " & scrRS_ro02.Value & GetText(g_arr_Text, "RACE008")
         .cmdRS_ro02a.caption = GetText(g_arr_Text, "RACEOPT029")
@@ -147,6 +132,9 @@ Private Sub UserForm_Initialize()
         .lblRefusalRate.caption = "1 " & GetText(g_arr_Text, "RACEOPT065") & " " & objOption.REFUSAL_RATE & " " & GetText(g_arr_Text, "RACEOPT066")
         .chk_TEO1.caption = GetText(g_arr_Text, "RACEOPT068")
         .chk_TEO2.caption = GetText(g_arr_Text, "RACEOPT069")
+        .lblRS_ro14.caption = GetText(g_arr_Text, "RACEOPT071")
+        .lblRS_ro15.caption = GetText(g_arr_Text, "RACEOPT072")
+        .chkRS_ro19.caption = GetText(g_arr_Text, "RACEOPT073")
         
         'ControlTipTexts
         .optRS_ro01.ControlTipText = GetText(g_arr_Text, "TIP001a") & " " & g_arr_Grammar(4) & " " & GetText(g_arr_Text, "TIP001b")
@@ -177,7 +165,7 @@ Private Sub UserForm_Initialize()
         .chkTribunes.ControlTipText = GetText(g_arr_Text, "TIP035")
         .chk_TEO1.ControlTipText = GetText(g_arr_Text, "TIP029")
         .chk_TEO2.ControlTipText = GetText(g_arr_Text, "TIP030")
-        .fraRS_ro14.ControlTipText = GetText(g_arr_Text, "CORONA001")
+        .chkRS_ro19.ControlTipText = GetText(g_arr_Text, "TIP036")
         
         'Get values
         .optRS_ro01.Value = (objOption.TACTICS = False)
@@ -192,7 +180,6 @@ Private Sub UserForm_Initialize()
         .chk_foc02b.Value = objOption.HIGHLIGHT_FOC
         .chk_foc02b.Enabled = (objOption.FOCUSED_RUN = enumCamera.focus_horse) 'Enabled only if the "Focused Run (Horse)" option is selected
         .chkRS_ro02.Value = objOption.HOOFPRINTS
-        .scrRS_ro01.Value = objOption.ZOOM_LEVEL
         .scrRS_ro02.Value = objOption.METRES_DISPLAY
         .chkRS_ro04.Value = objOption.NAMES_LEFT
         .chkRS_ro05.Value = objOption.COLOURS_LEFT
@@ -236,13 +223,13 @@ Private Sub UserForm_Initialize()
         .scrMomRefr.Value = objOption.MOMENTUM_REFRESHRATE
         .scrMomRefr.Enabled = (objOption.MOMENTUM = True) 'Enabled only if the "Momentum" checkbox is ticked
         .lblMomRefr.Enabled = (objOption.MOMENTUM = True) 'Enabled only if the "Momentum" checkbox is ticked
+        .chkRS_ro19.Value = objOption.AUTOFIT
+        
+        .StartUpPosition = 2 'Display the UserForm in the center of the screen
     End With
     
     'Set the initial race info preview colours
     Call DefaultPreviewColours
-    
-    'Display the UserForm in the center of the window
-    Call basAuxiliary.PlaceUserFormInCenter(Me)
 End Sub
 
 'Option button "Race info in a pop-up"
@@ -314,7 +301,6 @@ Private Sub cmdRS_ro01_Click()
     End Select
     objOption.HIGHLIGHT_FOC = chk_foc02b.Value
     objOption.HOOFPRINTS = chkRS_ro02.Value
-    objOption.ZOOM_LEVEL = scrRS_ro01.Value
     objOption.METRES_DISPLAY = scrRS_ro02.Value
     objOption.NAMES_LEFT = chkRS_ro04.Value
     objOption.COLOURS_LEFT = chkRS_ro05.Value
@@ -341,8 +327,9 @@ Private Sub cmdRS_ro01_Click()
     objOption.MOMENTUM_REFRESHRATE = scrMomRefr.Value
     objOption.TRIBUNES = chkTribunes.Value
     objOption.SPECTATORS = scrSpec.Value
+    objOption.AUTOFIT = chkRS_ro19.Value
     
-    'Adapt the caption of the race start button ("Betting and race" or "xxxxxxx")
+    'Adapt the caption of the race start button ("Start the race" or "Betting and race")
     If g_strPlayMode = "RS" Then
         g_wksRace.OLEObjects("startrace").Object.caption = GetText(g_arr_Text, getCaptionStartBtn(objOption.BET_MODE))
     Else 'AI edition - refresh the ribbon
@@ -435,15 +422,6 @@ Private Sub chkRS_ro10_Click()
         .cmdRS_ro02c.Enabled = (Me.chkRS_ro10.Value = True)
         .lblRS_ro07.Visible = (Me.chkRS_ro10.Value = True)
     End With
-End Sub
-
-'Change of the zoom level slider position
-Private Sub scrRS_ro01_Change()
-    'Adapt the horse size preview
-    lblscrRS_ro01.width = basMainCode.HorseSizePreview(scrRS_ro01.Value)(0)
-    lblscrRS_ro01.Height = basMainCode.HorseSizePreview(scrRS_ro01.Value)(1)
-    'Adapt the zoom level text
-        fraRS_ro02.caption = GetText(g_arr_Text, "ZOOM001") & ": " & basMainCode.ZoomLevelText(scrRS_ro01.Value)
 End Sub
 
 'Change of the race track metres slider position

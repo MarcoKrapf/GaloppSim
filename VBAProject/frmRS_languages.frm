@@ -1,9 +1,9 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmRS_languages 
-   ClientHeight    =   3036
+   ClientHeight    =   3396
    ClientLeft      =   12
    ClientTop       =   -72
-   ClientWidth     =   4752
+   ClientWidth     =   6480
    OleObjectBlob   =   "frmRS_languages.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End

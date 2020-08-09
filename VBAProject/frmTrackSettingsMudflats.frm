@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmTrackSettingsMudflats 
    Caption         =   "[Race specific settings]"
-   ClientHeight    =   2520
+   ClientHeight    =   3396
    ClientLeft      =   12
    ClientTop       =   -12
-   ClientWidth     =   5340
+   ClientWidth     =   6288
    OleObjectBlob   =   "frmTrackSettingsMudflats.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End

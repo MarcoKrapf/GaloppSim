@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmTestSuite 
    Caption         =   "RACE TEST AUTOMATION (RTA)"
-   ClientHeight    =   6396
-   ClientLeft      =   -852
-   ClientTop       =   -3420
-   ClientWidth     =   6780
+   ClientHeight    =   6288
+   ClientLeft      =   -1212
+   ClientTop       =   -4908
+   ClientWidth     =   7080
    OleObjectBlob   =   "frmTestSuite.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End
@@ -37,21 +37,8 @@ Private Sub btnTestStart_Click()
         Call TestStart_std(colTestRaces, opt2_std.Value, chk1_std.Value, _
                 chk2_std.Value, chk3_std.Value, chk4_std.Value, chk6_std.Value, chk7_std.Value)
     
-    Else 'Test repository
-    
-        Dim arr_TestRaces(2, 2) As Variant
-        
-        With listboxRaces_rep
-            For i = 0 To .ListCount - 1
-                If .SELECTED(i) Then
-'                    colTestRaces.Add (.List(i))
-'                    colTestRaces.Add (.List(i))
-                End If
-            Next i
-        End With
-        For i = 1 To colTestRaces.count
-            Debug.Print colTestRaces(i)
-        Next
+    Else 'Test repository (not yet implemented)
+
     End If
 End Sub
 
@@ -135,18 +122,17 @@ Private Sub UserForm_Initialize()
         Next item
     End With
     
-'    'Fill the "Test repository" list box with the test cases from Worksheet "TESTCASES"
-'    With listboxRaces_rep
-'        .MultiSelect = fmMultiSelectExtended
-'        For item = 4 To g_wksTCASE.Cells(1, Columns.count).End(xlToLeft).Column
-'            .AddItem g_wksTCASE.Cells(1, item).Value _
-'            & " (" & g_wksTCASE.Cells(2, item).Value & ")"
-'        Next item
-'    End With
+    'Fill the "Test repository" list box with the test cases from Worksheet "TESTCASES"
+    With listboxRaces_rep
+        .MultiSelect = fmMultiSelectExtended
+        For item = 4 To g_wksTCASE.Cells(1, Columns.count).End(xlToLeft).Column
+            .AddItem g_wksTCASE.Cells(1, item).Value _
+            & " (" & g_wksTCASE.Cells(2, item).Value & ")"
+        Next item
+    End With
     
     btnTestStart.Enabled = False
     
     multiPage.Value = 0 'Select the first page
-'ToDo: Enable in the next version!
     multiPage.Pages(1).Enabled = False
 End Sub

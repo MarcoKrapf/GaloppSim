@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmRS_navigation 
    Caption         =   "[Run Simple edition]"
-   ClientHeight    =   3036
-   ClientLeft      =   132
-   ClientTop       =   420
-   ClientWidth     =   9588
+   ClientHeight    =   2880
+   ClientLeft      =   96
+   ClientTop       =   240
+   ClientWidth     =   6900
    OleObjectBlob   =   "frmRS_navigation.frx":0000
    ShowModal       =   0   'False
    StartUpPosition =   1  'Fenstermitte
@@ -81,6 +81,7 @@ End Sub
 Private Sub cmdNavigation_Click()
     Unload Me
     Call basAuxiliary.ActivateRaceSheet 'Activate the GALOPPSIM worksheet
+    If objOption.AUTOFIT Then Call AutoZoom("FIX", 100) '100%
     Call basAuxiliary.Scroll(1, 1) 'Scroll to the upper left
 End Sub
 
@@ -95,7 +96,7 @@ Private Sub cmdNavResults_Click()
 End Sub
 
 Private Sub cmdNavWinner_Click()
-    Call ShowWinnerPhoto
+    Call ShowWinnerPhoto(False, True)
     UserForm_Activate
 End Sub
 

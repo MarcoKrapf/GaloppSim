@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmTrackSettingsAirQuality 
    Caption         =   "UserForm1"
-   ClientHeight    =   2856
+   ClientHeight    =   3216
    ClientLeft      =   -12
-   ClientTop       =   -84
-   ClientWidth     =   5856
+   ClientTop       =   -72
+   ClientWidth     =   6348
    OleObjectBlob   =   "frmTrackSettingsAirQuality.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End
