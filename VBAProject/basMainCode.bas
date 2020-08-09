@@ -6,7 +6,7 @@ Option Private Module 'Prevent the public procedures in this module from being a
 '   Module basMainCode
 
 
-'GALOPPSIM - Version 150.50C (April 2020)
+'GALOPPSIM - Version 151.00 (August 2020)
 'Horse Racing Simulator for Microsoft Excel
 'Author: Marco Matjes
 'info@galoppsim.racing - https://galoppsim.racing/
@@ -51,12 +51,14 @@ Option Private Module 'Prevent the public procedures in this module from being a
 'GLOBAL CONSTANTS AND VARIABLES
 '------------------------------
 Public Const g_c_tool As String = "GaloppSim" 'Name of the tool
-Public Const g_c_version As String = "(v150.50C)" 'Version of the tool
+Public Const g_c_version As String = "(v151.00)" 'Version of the tool
 Public Const g_c_email As String = "info@galoppsim.racing" 'Contact e-mail address
 Public Const g_c_defaultRaceOptionsFile As String = "RACEOPTIONS" 'File name for race options
 Public Const g_c_defaultFileType As String = ".GALOPPSIM" 'File type for GaloppSim files
 Public Const g_c_errorLogFileName As String = "GALOPPSIM_ERRORLOG" 'File name for error logging
-Public g_defaultPath As String 'Path for the GaloppSim files
+Public g_MLdataFileName As String 'File name for Machine Learning export
+Public g_defaultPath As String 'Path for GaloppSim files (Add-in standard folder)
+Public g_defaultMLpath As String 'Path for the Machine Learning files
 Public g_strPlayMode As String ' "AI" = AddIn (.xlam) / "RS" = Run Simple (.xlsm)
 Public g_RibbonGaloppSim As IRibbonUI 'Custom ribbon (only used for the AI edition)
 Public AI_started As Boolean 'Will be set true in AI edition when activating the GALOPPSIM menu tab the first time
@@ -64,6 +66,7 @@ Public g_skipDelay As Boolean 'For skipping delay commands (Application.Wait)
 Public g_errorLogPath As String 'Path for error logging
 Public g_errorLogging As Boolean 'Error logging on/off
 Public g_payoutLogging As Boolean 'Pay-out logging for bets on/off
+Public objBasicData As clsBasicData 'Object for all kind of basic data
 Public objRace As clsRace 'Object for all the data of a race
 Public objOption As clsOptions 'Object for the race and excel options
 Public objSpeed As clsSpeed 'Object for speed data
@@ -138,15 +141,19 @@ End Enum
 'VARIABLES AND CONSTANTS ON MODULE-LEVEL
 '---------------------------------------
 Dim m_wksCheck As Worksheet 'Variable to check whether the worksheet GALOPPSIM already exists
+
+'EXP
+Dim racelog As Boolean
+Dim m_arr_varRaceLog As Variant 'Position log of all horses for each step
+
+'EXP2
+Public KI_log As Boolean
+
 Dim m_arr_varPhotofinish() As Variant 'Position of each horse on the photo of the finish
 Dim m_arr_varResultsCalc() As Variant 'Calculation of the position at the finish line
 Dim m_arr_varResults() As Variant 'Race results list
 Dim m_arr_varTrackGraphics() As Variant 'Advertising sequence
 Dim m_intAdvertisingHeight As Integer 'Row height of the advertising area
-Dim m_dblRankingsWidth As Double 'Cell width of the photo of the finish and the ranking list
-Dim m_intTopRows As Integer 'Number of rows at the top of the worksheet (used for the menu in the RS edition)
-Dim m_intLeftColumns As Integer 'Number of columns left of the starting gates
-Dim m_intColumsAfterFinish As Integer 'Number of columns behind the finish line
 Dim m_intTrackCellHeight As Integer 'Cell height (race track)
 Dim m_dblTrackCellWidth As Double 'Cell width (race track)
 Dim m_intFontSize As Integer 'Font size of the horse names and the hoof prints
@@ -161,7 +168,12 @@ Dim m_blnDeadHeat As Boolean 'Dead heat (more than one horse are at 1st place)
 Dim m_intPlace As Integer 'Placement in the finish
 Dim m_arr_lngLugworms() As Long 'Array for the lugworm characters in a mudflats race
 Dim i As Integer, j As Integer, k As Integer, m As Integer 'Counting variables for loops
-Dim z As Long 'Auxiliary variable for loops
+Dim Z As Long 'Auxiliary variable for loops
+
+'VARIABLES USED FOR MATJES GRAND PRIX RACES (GROSSER MATJES-PREIS)
+'-----------------------------------------------------------------
+Dim GMP_mode As String
+Dim GMP_qualified As Integer
 
 
 'PROCEDURES
@@ -169,7 +181,8 @@ Dim z As Long 'Auxiliary variable for loops
 
 'Main procedure for starting a new race
 Public Sub NewRace(Optional test As Boolean)
-'    On Error GoTo ERRORHANDLING 'In case an error occurs
+
+    On Error GoTo ERRORHANDLING 'In case an error occurs
 
     'Override settings dependent on the selected race and colour mode
     Call GetColours_colMode
@@ -184,19 +197,25 @@ Public Sub NewRace(Optional test As Boolean)
     Set g_colBetSlips = New Collection
     
     If Not test Then Call AssignRaceSheet
+
     Call GetRaceData 'Get the race data from the worksheet with the selected race
     Call GetAnimalGrammar 'Get grammar components according to the selected language
     Call AssignBasicValues(test) 'Get basic values
     Call GetHorseData 'Get data about the horses according to the selected race
+    
     If Not test Then Call CheckBettingAllowed 'Check whether betting is allowed for this race
     If Not test Then Call ShowStartPopup 'Show the pop-up with the race to run
-    
     If test Then 'Parameters for automatic testing
 '        Application.VBE.MainWindow.WindowState = 1 'Minimize the VBA editor
         objRace.STARTED = True
     End If
     
     If objRace.STARTED Then
+        If g_strPlayMode = "AI" Then
+            Call CreateRaceSheet 'Create the worksheet "GALOPPSIM"
+            Call AI_ExcelModeStart
+            Call CursorAway 'Place the cursor far away (in the upper right corner of the screen)
+        End If
         
         If g_strPlayMode = "RS" Then
             Call basAuxiliary.ActivateRaceSheet
@@ -218,6 +237,7 @@ Public Sub NewRace(Optional test As Boolean)
         Call RacePresentation(test) 'Presentation of the horses
         Call RunRace 'Race start
         Call RankNotFinished 'Find the horses that did not finish
+        Call TransmitPlacements 'Write the placements to the main array
         If Not test Then Call RaceFinished 'Info pop-up when the race is over
         Call CheckDeadHeat 'Check whether more than one horse has won
         Call DrawRankingList(True, test) 'Race results on the ranking list
@@ -241,6 +261,11 @@ Public Sub NewRace(Optional test As Boolean)
         End If
         
         If g_strPlayMode = "RS" And test Then Call RS_MenuAreaShow(False)
+
+        If g_strPlayMode = "AI" Then
+            g_RibbonGaloppSim.Invalidate 'Refresh the status buttons
+            Call AI_ExcelModeEnd
+        End If
         
     End If
 
@@ -259,7 +284,7 @@ Public Sub RS_NewRace()
     'following line for debugging purposes
 '    Stop
     
-    m_intTopRows = 8 'Space on the top of the worksheet for the control elements
+    objBasicData.TOP_ROWS = 8 'Space on the top of the worksheet for the control elements
                         'like the dropdown and menu buttons
     Call CreateRaceSheet 'Create the worksheet "GALOPPSIM"
     Call RS_StartScreen 'Draw the start screen
@@ -268,6 +293,91 @@ Public Sub RS_NewRace()
     Exit Sub
 ERRORHANDLING:
     If g_errorLogging Then Call WriteErrorLog(VBA.Now, Err, Application.VBE.ActiveCodePane.CodeModule, "RS_NewRace()")
+    Call basAuxiliary.CodeCrash
+End Sub
+
+'Simulation race for Machine Learning without graphical representation
+Public Sub ML_NewRace(lngSimCase As Long, varSave As Variant)
+    Dim timestamp As Date 'For saving the current time stamp
+    
+    On Error GoTo ERRORHANDLING 'In case an error occurs
+    
+    Call GetRaceData(True) 'Get the race data from the worksheet with the selected race
+    Call AssignBasicValues 'Get basic values
+    Call GetHorseData(True) 'Get data about the horses according to the selected race
+    Call CheckSpaceRace 'Check whether a space race is chosen
+    Call RunRace(True) 'Race start
+    Call RankNotFinished 'Find the horses that did not finish
+    Call TransmitPlacements 'Write the placements to the main array
+    
+    'Save to hard disk
+    If frmMachineLearning.chkExport Then
+        Dim intFileNr As Integer 'Output channel
+        intFileNr = FreeFile 'Assign the next free number
+        
+        timestamp = Now
+        
+        Open varSave For Append As #intFileNr
+        
+        For i = 1 To UBound(g_arr_varHorses) 'Loop through the horses
+            Print #intFileNr, "ID-" & lngSimCase & "-" & timestamp & ";" _
+                    & objRace.RACE_ID & ";" _
+                    & objRace.PARTICIPANTS & ";" _
+                    & objRace.METRES & ";" _
+                    & objRace.NUMBER_ENROLLED & ";" _
+                    & objRace.NUMBER_STARTING & ";" _
+                    & objRace.LANES_FIX_OR_RANDOM & ";" _
+                    & objRace.RACE_TYPE & ";" _
+                    & objOption.REFUSE_RUN & ";" _
+                    & objOption.REFUSAL_RATE & ";" _
+                    & objOption.SLIPSTREAM & ";" _
+                    & objOption.SLIPSTREAM_DBL & ";" _
+                    & g_arr_varHorses(i, 1) & " (#" & g_arr_varHorses(i, 11) & ")" & ";" _
+                    & g_arr_varHorses(i, 0) & ";" _
+                    & g_arr_varHorses(i, 12) & ";" _
+                    & g_arr_varHorses(i, 15) & ";" _
+                    & g_arr_varHorses(i, 5) & ";" _
+                    & g_arr_varHorses(i, 6) & ";" _
+                    & g_arr_varHorses(i, 25)
+        Next i
+        
+        Close #intFileNr
+    End If
+    
+    'Write to debug window
+    If frmMachineLearning.chkDebug Then
+        Debug.Print "ID:                " & "ID-" & lngSimCase & "-" & timestamp
+        Debug.Print "PARTICIPANTS:      " & objRace.PARTICIPANTS
+        Debug.Print "METRES:            " & objRace.METRES
+        Debug.Print "ENROLLED:          " & objRace.NUMBER_ENROLLED
+        Debug.Print "STARTERS:          " & objRace.NUMBER_STARTING
+        Debug.Print "STARTING_ORDER:    " & objRace.LANES_FIX_OR_RANDOM
+        Debug.Print "RACETYPE:          " & objRace.RACE_TYPE
+        Debug.Print "REFUSE_TO_RUN:     " & objOption.REFUSE_RUN
+        Debug.Print "REFUSAL_RATE:      " & objOption.REFUSAL_RATE
+        Debug.Print "SLIPSTREAM:        " & objOption.SLIPSTREAM
+        Debug.Print "SLIPSTREAM_DOUBLE: " & objOption.SLIPSTREAM_DBL
+        Debug.Print vbNewLine & "Final ranking list:"
+        For i = 1 To UBound(m_arr_varResults) 'Loop through the results
+            Debug.Print m_arr_varResults(i, 1) _
+                        & ". #" & m_arr_varResults(i, 2) _
+                        & " " & m_arr_varResults(i, 3)
+        Next i
+        Debug.Print
+        For i = 1 To UBound(g_arr_varHorses) 'Loop through the horses
+            Debug.Print "NAME: " & g_arr_varHorses(i, 1) & " (#" & g_arr_varHorses(i, 11) & ")"
+            Debug.Print "    STATUS:       " & g_arr_varHorses(i, 0)
+            Debug.Print "    PLACEMENT:    " & g_arr_varHorses(i, 12)
+            Debug.Print "    BOX_NR:       " & g_arr_varHorses(i, 15)
+            Debug.Print "    BASIC_SPEED:  " & g_arr_varHorses(i, 5)
+            Debug.Print "    FORM_FACTOR:  " & g_arr_varHorses(i, 6)
+            Debug.Print "    TACTICS:      " & g_arr_varHorses(i, 25)
+        Next i
+    End If
+
+    Exit Sub
+ERRORHANDLING:
+    If g_errorLogging Then Call WriteErrorLog(VBA.Now, Err, Application.VBE.ActiveCodePane.CodeModule, "ML_NewRace()")
     Call basAuxiliary.CodeCrash
 End Sub
 
@@ -484,7 +594,7 @@ Public Sub RS_ExecuteClick(name As String)
         Case "results"
             Call ShowRankingList
         Case "winner"
-            Call ShowWinnerPhoto
+            Call ShowWinnerPhoto(False, True)
         Case "bets"
             Call ShowBets
         Case "raceoptions"
@@ -508,6 +618,8 @@ Public Sub RS_ExecuteClick(name As String)
             Call ShowWarning
         Case "movie2017"
             Call GaloppSimMovie2017
+        Case "lego"
+            Call LEGOintegration
         Case "colours"
             Call ColourModeSelection
     End Select
@@ -532,6 +644,7 @@ Public Sub ShowNewRaceScreen(pic As String)
     End With
     
     If g_strPlayMode = "RS" Then Call RS_MenuAreaHide 'Hide the controls on the worksheet (RS edition)
+    If g_strPlayMode = "AI" Then Call AI_ExcelModeStart
     ActiveWindow.ScrollColumn = 1 'Scroll to the left (column A)
     Call PaintPicture(g_wksPIC, g_wksRace, pic, 100, 40, 1, 1) 'Paint the GALOPPSIM title picture
     Call CursorAway 'Place the cursor far away (in the upper right corner of the screen)
@@ -594,7 +707,7 @@ End Sub
 'Add a new combobox with all installed races on the worksheet in the RS edition
 Private Sub RS_AddComboboxRaces(n As String, l As Integer, t As Integer, w As Integer, h As Integer)
     On Error GoTo ERRORHANDLING 'In case an error occurs
-    
+
     'As this procedure is triggered automatically and executed only once
     'when opening the workbook comment in the "Stop" command in the
     'following line for debugging purposes
@@ -611,12 +724,12 @@ Private Sub RS_AddComboboxRaces(n As String, l As Integer, t As Integer, w As In
     With g_oleComboRaces
         .name = n 'ID
         .Placement = xlFreeFloating
-        .Object.ColumnCount = 2
+        .Object.ColumnCount = 2 'column 0: race name
         .Object.ColumnWidths = "0 Pt" 'width of the column with the race name --> hidden
         .Object.Style = fmStyleDropDownList 'Allow only values from the item list, no free entries
         .Visible = True
     End With
-
+    
     'Populate the dropdown with all installed races (all worksheets beginning with "race_")
     For Each wksCheck In ThisWorkbook.Worksheets
         If left(wksCheck.name, 5) = "race_" Then
@@ -657,7 +770,7 @@ Private Sub RS_MenuAreaHide()
     Next oleObj
     
     'Hide the top rows which are used for the control objects
-    Range(rows(2), rows(m_intTopRows)).Hidden = True
+    Range(rows(2), rows(objBasicData.TOP_ROWS)).Hidden = True
 End Sub
 
 'Show all controls on the worksheet in the RS edition
@@ -667,7 +780,7 @@ Public Sub RS_MenuAreaShow(popup As Boolean)
     Call basAuxiliary.ActivateRaceSheet
 
     'Show the top rows which are used for the control objects
-    Range(rows(2), rows(m_intTopRows)).Hidden = False
+    Range(rows(2), rows(objBasicData.TOP_ROWS)).Hidden = False
 
     'Loop through all control objects and show them one by one
     For Each oleObj In g_wksRace.OLEObjects
@@ -692,7 +805,7 @@ Public Sub RS_StartScreen()
     Cells.Clear 'Clear the whole worksheet
     
     'Paint the title picture
-    Call PaintPicture(g_wksPIC, g_wksRace, "RUNSIMPLE2", 100, 40, 1, 1)
+    Call PaintPicture(g_wksPIC, g_wksRace, "RUNSIMPLE3", 100, 40, 1, 1)
     'Formattings for the area with the picture
     With Range(Columns(1), Columns(100)) 'Column width and row height dependent on the window size
         .ColumnWidth = ZoomLevelPictures()(0)
@@ -700,7 +813,7 @@ Public Sub RS_StartScreen()
         .rows(1).RowHeight = 8 'Height of the top row
         With .rows(2) 'Formattings for the second row
             .Font.name = "Arial Black" 'For getting the font in the dropdown with the races bold
-            .EntireRow.AutoFit
+            .EntireRow.AUTOFIT
         End With
     End With
     'Write the title in cell B2
@@ -737,44 +850,13 @@ End Sub
 'Assign basic values
 Private Sub AssignBasicValues(Optional test As Boolean)
     On Error GoTo ERRORHANDLING 'In case an error occurs
-        
-    'Check the zoom level
-    Dim byteOpt As Byte
-    byteOpt = ZoomLevelRecommendation 'Get a recommendation
-
-    If Not test And objOption.ZOOM_LEVEL <> byteOpt Then 'Compare the selected value with the recommendation
-        Call ShowMessagePopup(objRace.RACE_NAME & " " & objRace.RACE_YEAR, _
-            GetText(g_arr_Text, "ZOOM007") & vbNewLine & vbNewLine & _
-            GetText(g_arr_Text, "ZOOM008") & ": " & ZoomLevelText(objOption.ZOOM_LEVEL) & vbNewLine & _
-            GetText(g_arr_Text, "ZOOM009") & ": " & ZoomLevelText(byteOpt) & vbNewLine & vbNewLine & _
-            GetText(g_arr_Text, "ZOOM010"), _
-            enumButton.YesNo, vbModal)
-                
-            'Evaluate the return value of the clicked button
-            If g_enumButton = enumButton.yes Then objOption.ZOOM_LEVEL = byteOpt 'Adapt the value
-    End If
     
-    'Assign the values according to the zoom level
-    Select Case objOption.ZOOM_LEVEL
-        Case 1
-            m_intTrackCellHeight = 6 'Cell height on the race track
-            m_dblTrackCellWidth = 0.33 'Cell width (i.e. length) on the race track
-            m_intFontSize = 5 'Font size for the horse names and the hoof prints
-            m_dblRankingsWidth = 3 'Cell width for the finish photo and the ranking list
-            m_intAdvertisingHeight = 2 'Row height in the advertising area
-        Case 2
-            m_intTrackCellHeight = 9
-            m_dblTrackCellWidth = 0.42
-            m_intFontSize = 8
-            m_dblRankingsWidth = 4.5
-            m_intAdvertisingHeight = 5
-        Case 3
-            m_intTrackCellHeight = 12
-            m_dblTrackCellWidth = 0.5
-            m_intFontSize = 10
-            m_dblRankingsWidth = 6
-            m_intAdvertisingHeight = 6
-    End Select
+    'Font and cell sizes
+    m_intTrackCellHeight = 12
+    m_dblTrackCellWidth = 0.5
+    m_intFontSize = 10
+    objBasicData.RANK_WIDTH = 6
+    m_intAdvertisingHeight = 6
         
     If left(objRace.RACE_ID, 5) = "SPACE" Then
         objSpeed.SPEED_BASIC_LOW = 100
@@ -800,9 +882,9 @@ Private Sub AssignBasicValues(Optional test As Boolean)
     End If
     
     'Columns left of the starting line (minimum 7, default value 11)
-    m_intLeftColumns = 12
+    objBasicData.LEFT_COLS = 12
     'Columns behind the finish line (minimum 5)
-    m_intColumsAfterFinish = 5
+    objBasicData.AFTER_FIN_COLS = 5
     
     Exit Sub
 ERRORHANDLING:
@@ -816,7 +898,7 @@ Private Sub AssignRaceSheet()
 End Sub
 
 'Read the data of the selected race from the worksheet
-Private Sub GetRaceData()
+Private Sub GetRaceData(Optional ml As Boolean)
     On Error GoTo ERRORHANDLING 'In case an error occurs
 
     'Read the full race data from the worksheet
@@ -843,8 +925,10 @@ Private Sub GetRaceData()
         objRace.NUMBER_ENROLLED = .Cells(.rows.count, GetColumn(g_wksRaceData, "STATUS")).End(xlUp).row - 1 'Number of horses enrolled
         objRace.NUMBER_STARTING = Application.WorksheetFunction.CountIf(.Columns(GetColumn(g_wksRaceData, "STATUS")), "START")
         objRace.SPECIAL = .Cells(basAuxiliary.GetRow(g_wksRaceData, "SPECIAL"), col).Value 'For special purposes
+        GMP_mode = .Cells(basAuxiliary.GetRow(g_wksRaceData, "GMP_MODE"), col).Value 'For Matjes Grand Prix Races
     End With
 
+If Not ml Then 'Skip for Machine Learning simulation races
     'Take the colour mode into account
     Select Case g_strColourMode
         Case "POPART"
@@ -852,10 +936,10 @@ Private Sub GetRaceData()
             objRace.TRACK_COLOUR = PopArtColour(objRace.TRACK_COLOUR)
         Case "LSD"
             If objRace.TRACK_COLOUR > 0 And objRace.TRACK_COLOUR < 16777215 Then _
-            objRace.TRACK_COLOUR = PopArtColour(Int((16777215 - 0 + 1) * rnd + 0))
+            objRace.TRACK_COLOUR = PopArtColour(Int((16777215 - 0 + 1) * Rnd + 0))
         Case "SMARTIES"
             If objRace.TRACK_COLOUR > 0 And objRace.TRACK_COLOUR < 16777215 Then _
-            objRace.TRACK_COLOUR = Int((16777215 - 0 + 1) * rnd + 0)
+            objRace.TRACK_COLOUR = Int((16777215 - 0 + 1) * Rnd + 0)
         Case "TV1960"
             objRace.TRACK_COLOUR = GreyToLong(CInt(RGBtoGrey(CLng(objRace.TRACK_COLOUR))))
         Case "DARKMODE"
@@ -863,6 +947,7 @@ Private Sub GetRaceData()
         Case "24H"
             objRace.TRACK_COLOUR = DuskDawn(objRace.TRACK_COLOUR, Abs(22 * objOption.DAYLIGHT))
     End Select
+End If
     
     Exit Sub
 ERRORHANDLING:
@@ -915,7 +1000,7 @@ Private Function GetCountryName(code As String, language As String) As String
 End Function
 
 'Read all horse data from the race sheet
-Private Sub GetHorseData()
+Private Sub GetHorseData(Optional ml As Boolean)
     On Error GoTo ERRORHANDLING 'In case an error occurs
     
     'Resize the arrays for the horse data
@@ -947,6 +1032,7 @@ Private Sub GetHorseData()
             g_arr_varHorses(i, 1) = .Cells(1 + i, GetColumn(g_wksRaceData, "NAME")).Value 'Horse name
         End With
     
+If Not ml Then 'Skip for Machine Learning simulation races
         'Get the horse colours
         If Not IsEmpty(g_wksRaceData.Cells(1 + i, GetColumn(g_wksRaceData, "COLOUR 8 (HEAD)"))) Then 'If the colour of the head is not empty
             For colour = 0 To 7
@@ -961,18 +1047,19 @@ Private Sub GetHorseData()
             If same_colour Then g_arr_varHorses(i, 2) = arr_colour(0) Else g_arr_varHorses(i, 2) = arr_colour
         Else 'If no colour of the head is found: Determine a random colour for the whole horse
             Randomize 'Initialize the random number generator
-            g_arr_varHorses(i, 2) = Int((16777215 - 0 + 1) * rnd + 0) 'Apply the randomly generated colour for the whole horse
+            g_arr_varHorses(i, 2) = Int((16777215 - 0 + 1) * Rnd + 0) 'Apply the randomly generated colour for the whole horse
             'Formula for the generation of a random integer value within a specific range:
             'Int((upperbound - lowerbound + 1) * Rnd + lowerbound)
             '>> replace upperbound and lowerbound with integer values
         End If
-        
+End If
+
         'In case of a random line-up at the start: Assign the starting gates
         If objRace.LANES_FIX_OR_RANDOM = "R" Then
             inGate = False 'Horse is not yet assigned to a starting gate
             Do Until inGate = True 'Loop until a starting gate is assigned
                 Randomize 'Initialize the random number generator
-                gateNr = (Int((objRace.NUMBER_ENROLLED - 1 + 1) * rnd + 1)) 'Random number
+                gateNr = (Int((objRace.NUMBER_ENROLLED - 1 + 1) * Rnd + 1)) 'Random number
                 If arrGates(gateNr) <> 0 Then 'If this gate is empty
                     g_arr_varHorses(i, 15) = gateNr 'Starting gate
                     arrGates(gateNr) = 0 'Mark the gate as occupied
@@ -983,8 +1070,8 @@ Private Sub GetHorseData()
             g_arr_varHorses(i, 15) = g_wksRaceData.Cells(1 + i, GetColumn(g_wksRaceData, "LANE")).Value 'Read the starting gate from the worksheet
         End If
         
-        g_arr_varHorses(i, 3) = m_intTopRows + 5 + 2 * g_arr_varHorses(i, 15) 'Row number on which the horse will run
-        g_arr_varHorses(i, 4) = m_intLeftColumns + 12 'Starting position (column number)
+        g_arr_varHorses(i, 3) = objBasicData.TOP_ROWS + 5 + 2 * g_arr_varHorses(i, 15) 'Row number on which the horse will run
+        g_arr_varHorses(i, 4) = objBasicData.LEFT_COLS + 12 'Starting position (column number)
         g_arr_varHorses(i, 9) = 0 'Exact position for internal calculation (0 to [race distance in metres * 100])
         
         'Get the basic speed
@@ -992,39 +1079,44 @@ Private Sub GetHorseData()
             g_arr_varHorses(i, 5) = g_wksRaceData.Cells(1 + i, GetColumn(g_wksRaceData, "SPEED")).Value 'Fixed basic speed
         Else 'If no value is found: generate it by random within a determined range
             Randomize
-            g_arr_varHorses(i, 5) = Int((objSpeed.SPEED_BASIC_HIGH - objSpeed.SPEED_BASIC_LOW + 1) * rnd + objSpeed.SPEED_BASIC_LOW)
+            g_arr_varHorses(i, 5) = Int((objSpeed.SPEED_BASIC_HIGH - objSpeed.SPEED_BASIC_LOW + 1) * Rnd + objSpeed.SPEED_BASIC_LOW)
         End If
         
         'Determine the daily form of the horse by random
         Randomize
-        g_arr_varHorses(i, 6) = Int((objSpeed.SPEED_COND_HIGH - objSpeed.SPEED_COND_LOW + 1) * rnd + objSpeed.SPEED_COND_LOW)
+        g_arr_varHorses(i, 6) = Int((objSpeed.SPEED_COND_HIGH - objSpeed.SPEED_COND_LOW + 1) * Rnd + objSpeed.SPEED_COND_LOW)
         
+If Not ml Then 'Skip for Machine Learning simulation races
         'Determine the betting odds
         If Not IsEmpty(g_wksRaceData.Cells(1 + i, GetColumn(g_wksRaceData, "ODDS (X:10)"))) Then 'If a value is found on the race sheet
             g_arr_varHorses(i, 17) = g_wksRaceData.Cells(1 + i, GetColumn(g_wksRaceData, "ODDS (X:10)")).Value 'Fixed odds
         Else 'If no value is found: derive it from the basic speed with a complex formula
             Randomize
             'Rounded integer value from (((50 + (((number of starters + 2) / 6) * (1523 - basic speed) ^ 2)) / 5) * random value between 0.9 and 1.1)
-            g_arr_varHorses(i, 17) = Round(((50 + (((objRace.NUMBER_ENROLLED + 2) / 6) * (1523 - g_arr_varHorses(i, 5)) ^ 2)) / 5) * (Int((11 - 9 + 1) * rnd + 9) / 10), 0)
+            g_arr_varHorses(i, 17) = Round(((50 + (((objRace.NUMBER_ENROLLED + 2) / 6) * (1523 - g_arr_varHorses(i, 5)) ^ 2)) / 5) * (Int((11 - 9 + 1) * Rnd + 9) / 10), 0)
         End If
             
         'Estimation error for the impression during the warm-up (+/-50 pixels of the bar length)
         Randomize
-        g_arr_varHorses(i, 18) = (Int((100 - 0 + 1) * rnd + 0)) - 50 'Random number between -50 and +50
-            
+        g_arr_varHorses(i, 18) = (Int((100 - 0 + 1) * Rnd + 0)) - 50 'Random number between -50 and +50
+End If
+
         'Reset the slipstream factor
         g_arr_varHorses(i, 22) = 0
             
+If Not ml Then 'Skip for Machine Learning simulation races
         'Get the picture of the winner
         If g_wksRaceData.Cells(1 + i, GetColumn(g_wksRaceData, "PHOTO")).Value <> "" Then 'If a value is found on the race sheet
             g_arr_varHorses(i, 23) = g_wksRaceData.Cells(1 + i, GetColumn(g_wksRaceData, "PHOTO")).Value 'Specific picture
         Else 'If no value is found: take the default picture
             g_arr_varHorses(i, 23) = "WINNER_" & objRace.PARTICIPANTS & "_DEFAULT"
         End If
-        
+End If
+
         'Attribute for different purposes like a special race behaviour
         g_arr_varHorses(i, 24) = g_wksRaceData.Cells(1 + i, GetColumn(g_wksRaceData, "SPECIAL")).Value
     
+If Not ml Then 'Skip for Machine Learning simulation races
         'Take the colour mode into account
         Select Case g_strColourMode
             Case "POPART"
@@ -1034,7 +1126,7 @@ Private Sub GetHorseData()
                         
                         If g_arr_varHorses(i, 2)(j) = objRace.TRACK_COLOUR Then
                             Do
-                                g_arr_varHorses(i, 2)(j) = PopArtColour(Int((16777215 - 0 + 1) * rnd + 0))
+                                g_arr_varHorses(i, 2)(j) = PopArtColour(Int((16777215 - 0 + 1) * Rnd + 0))
                             Loop Until g_arr_varHorses(i, 2)(j) <> objRace.TRACK_COLOUR
                         End If
                     Next j
@@ -1043,7 +1135,7 @@ Private Sub GetHorseData()
                         
                     If g_arr_varHorses(i, 2) = objRace.TRACK_COLOUR Then
                         Do
-                            g_arr_varHorses(i, 2) = PopArtColour(Int((16777215 - 0 + 1) * rnd + 0))
+                            g_arr_varHorses(i, 2) = PopArtColour(Int((16777215 - 0 + 1) * Rnd + 0))
                         Loop Until g_arr_varHorses(i, 2) <> objRace.TRACK_COLOUR
                     End If
                 End If
@@ -1051,21 +1143,21 @@ Private Sub GetHorseData()
                 If IsArray(g_arr_varHorses(i, 2)) Then
                     For j = 0 To 7
                         Do
-                            g_arr_varHorses(i, 2)(j) = PopArtColour(Int((16777215 - 0 + 1) * rnd + 0))
+                            g_arr_varHorses(i, 2)(j) = PopArtColour(Int((16777215 - 0 + 1) * Rnd + 0))
                         Loop Until g_arr_varHorses(i, 2)(j) <> objRace.TRACK_COLOUR
                     Next j
                 Else
                     Do
-                        g_arr_varHorses(i, 2) = PopArtColour(Int((16777215 - 0 + 1) * rnd + 0))
+                        g_arr_varHorses(i, 2) = PopArtColour(Int((16777215 - 0 + 1) * Rnd + 0))
                     Loop Until g_arr_varHorses(i, 2) <> objRace.TRACK_COLOUR
                 End If
             Case "SMARTIES"
                 If IsArray(g_arr_varHorses(i, 2)) Then
                     For j = 0 To 7
-                        g_arr_varHorses(i, 2)(j) = Int((16777215 - 0 + 1) * rnd + 0)
+                        g_arr_varHorses(i, 2)(j) = Int((16777215 - 0 + 1) * Rnd + 0)
                     Next j
                 Else
-                    g_arr_varHorses(i, 2) = Int((16777215 - 0 + 1) * rnd + 0)
+                    g_arr_varHorses(i, 2) = Int((16777215 - 0 + 1) * Rnd + 0)
                 End If
             Case "TV1960"
                 If IsArray(g_arr_varHorses(i, 2)) Then
@@ -1081,13 +1173,13 @@ Private Sub GetHorseData()
                         g_arr_varHorses(i, 2)(j) = DarkModeColour(g_arr_varHorses(i, 2)(j))
                         
                         If g_arr_varHorses(i, 2)(j) = objRace.TRACK_COLOUR Then _
-                            g_arr_varHorses(i, 2)(j) = DarkModeColour(Int((16777215 - 0 + 1) * rnd + 0))
+                            g_arr_varHorses(i, 2)(j) = DarkModeColour(Int((16777215 - 0 + 1) * Rnd + 0))
                     Next j
                 Else
                     g_arr_varHorses(i, 2) = DarkModeColour(g_arr_varHorses(i, 2))
                         
                     If g_arr_varHorses(i, 2) = objRace.TRACK_COLOUR Then _
-                        g_arr_varHorses(i, 2) = DarkModeColour(Int((16777215 - 0 + 1) * rnd + 0))
+                        g_arr_varHorses(i, 2) = DarkModeColour(Int((16777215 - 0 + 1) * Rnd + 0))
                 End If
             Case "24H"
                 If IsArray(g_arr_varHorses(i, 2)) Then
@@ -1098,7 +1190,8 @@ Private Sub GetHorseData()
                     g_arr_varHorses(i, 2) = DuskDawn(g_arr_varHorses(i, 2), Abs(22 * objOption.DAYLIGHT))
                 End If
         End Select
-        
+End If
+
         Next i
     
     'Calculation of the race favourites
@@ -1143,35 +1236,18 @@ Private Sub GetHorseData()
             
     'Determine the speed of each horse in each phase of the race
     '(even if is not used in the race when tactics are deactivated)
-    Dim a As Integer
-    Dim aux() As String
-    
     For i = 1 To objRace.NUMBER_ENROLLED
-            
         If g_wksRaceData.Cells(1 + i, GetColumn(g_wksRaceData, "TACTICS")).Value <> "" Then 'If a value is found on the race sheet
             g_arr_varHorses(i, 25) = g_wksRaceData.Cells(1 + i, GetColumn(g_wksRaceData, "TACTICS")).Value
         Else
-            g_arr_varHorses(i, 25) = "SSMMFF"
-            ReDim aux(1 To 6)
-            For j = 1 To 6
-                Do
-                    a = Int((6 - 1 + 1) * rnd + 1) 'Find a free place in the Array
-                    If aux(a) = "" Then
-                        aux(a) = Mid(g_arr_varHorses(i, 25), j, 1)
-                        Exit Do
-                    End If
-                Loop
-            Next
-            g_arr_varHorses(i, 25) = ""
-            For j = 1 To 6
-                g_arr_varHorses(i, 25) = g_arr_varHorses(i, 25) & aux(j)
-            Next
+            g_arr_varHorses(i, 25) = g_wksTEC.Cells( _
+                Int((142 - 2 + 1) * Rnd + 2), _
+                GetColumn(g_wksTEC, "TACTICS")).Value
         End If
         
         For j = 1 To 6 'Convert the letters to speed values
             g_arr_varHorses(i, 25 + j) = TacticMapping(Mid(g_arr_varHorses(i, 25), j, 1))
         Next j
-    
     Next i
         
     Exit Sub
@@ -1221,7 +1297,6 @@ Private Sub SetExcelOptions(blnGrid As Boolean, blnHead As Boolean, blnFormula A
 
     With Application
         'Since some parameters depend on each other, the order of execution is important
-            .DisplayFullScreen = blnFull 'Excel ribbon
             .ActiveWindow.DisplayGridlines = blnGrid 'Gridlines
             .ActiveWindow.DisplayHeadings = blnHead 'Row and column headings
             .DisplayFormulaBar = blnFormula 'Formula bar
@@ -1254,69 +1329,6 @@ Public Function ZoomLevelPictures() As Variant() 'Return an array with the value
         End Select
 End Function
 
-'Zoom level recommendation dependent on the window size and the number of starters
-Public Function ZoomLevelRecommendation(Optional test As Boolean) As Byte
-
-    Dim dblWindowHeight As Double
-    Dim intHorses As Byte
-
-    dblWindowHeight = Application.ActiveWindow.Height 'Window height
-    
-    'Get the number of horses in the selected race
-    If Not test Then
-        intHorses = ThisWorkbook.Worksheets(objRace.SELECTED).Cells( _
-            basAuxiliary.GetRow(ThisWorkbook.Worksheets(objRace.SELECTED), "NUMBER OF STARTERS"), 2).Value
-    Else
-        intHorses = g_wksRaceData.Cells( _
-            basAuxiliary.GetRow(g_wksRaceData, "NUMBER OF STARTERS"), 2).Value
-    End If
-
-    Select Case dblWindowHeight
-        Case Is > 790 'Window height (e.g. screen resolution 1680x1050 pixels)
-            If intHorses <= 23 Then 'Up to 23 horses
-                ZoomLevelRecommendation = 3
-            ElseIf intHorses <= 31 Then '24-31 horses
-                ZoomLevelRecommendation = 2
-            Else 'More than 31 horses
-                ZoomLevelRecommendation = 1
-            End If
-        Case Is > 550 'Window height (e.g. screen resolution 1368x768 pixels)
-            If intHorses <= 9 Then 'Up to 9 horses
-                ZoomLevelRecommendation = 3
-            ElseIf intHorses <= 14 Then '10-14 horses
-                ZoomLevelRecommendation = 2
-            Else 'More than 14 horses
-                ZoomLevelRecommendation = 1
-            End If
-        Case Else 'Small
-            ZoomLevelRecommendation = 1
-    End Select
-End Function
-
-'Retrieve the zoom level text
-Public Function ZoomLevelText(byteZL As Byte) As String
-    Select Case byteZL
-        Case 1
-            ZoomLevelText = GetText(g_arr_Text, "ZOOM003") 'Small
-        Case 2
-            ZoomLevelText = GetText(g_arr_Text, "ZOOM004") 'Medium
-        Case 3
-            ZoomLevelText = GetText(g_arr_Text, "ZOOM005") 'Large
-    End Select
-End Function
-
-'Retrieve data for the horse size preview
-Public Function HorseSizePreview(intHSP) As Variant() 'Return an array with the values
-    Select Case intHSP
-        Case 1
-            HorseSizePreview = Array(12, 6) '(Width, height) of the horse (small)
-        Case 2
-            HorseSizePreview = Array(22, 9) '(medium)
-        Case 3
-            HorseSizePreview = Array(30, 12) '(large)
-    End Select
-End Function
-
 'Grammar components for compiling texts with different race participants
 Public Sub GetAnimalGrammar()
     Dim animal As String 'Race participants (HORSE/PIG/DONKEY/DOG/UNICORN)
@@ -1346,7 +1358,7 @@ Private Sub DrawRaceTrack()
     On Error GoTo ERRORHANDLING 'In case an error occurs
 
     'Variables for overriding settings
-    Dim noSpectators As Boolean
+    Dim intNumberSpectators As Integer
 
     Call basAuxiliary.ActivateRaceSheet
     
@@ -1355,8 +1367,8 @@ Private Sub DrawRaceTrack()
         
     'Freeze columns A-M if one of those checkboxes is activated, otherwise unfreeze
     If objOption.NAMES_LEFT Or objOption.COLOURS_LEFT Or objOption.MOMENTUM _
-    Or objOption.TACTICS_REVEAL_TAC Or objOption.TACTICS_REVEAL_CURR _
-    Or objOption.HIGHLIGHT_FAV Or (objOption.RACE_INFO And objOption.RACE_INFO_WKS) _
+        Or objOption.TACTICS_REVEAL_TAC Or objOption.TACTICS_REVEAL_CURR _
+        Or objOption.HIGHLIGHT_FAV Or (objOption.RACE_INFO And objOption.RACE_INFO_WKS) _
         Or (objOption.FOCUSED_RUN <> enumCamera.standard And objOption.HIGHLIGHT_FOC) Then
             Call basAuxiliary.Freeze(13, 0, True) 'Freeze
     Else
@@ -1364,19 +1376,19 @@ Private Sub DrawRaceTrack()
     End If
 
     'Formatting: Row height of different sections
-    Range(rows(1 + m_intTopRows), rows(5 + m_intTopRows)).EntireRow.RowHeight = 15 'Above the race track
-    Range(rows(objRace.NUMBER_ENROLLED * 2 + 6 + 1 + m_intTopRows), _
-        rows(objRace.NUMBER_ENROLLED * 2 + 52 + m_intTopRows)).EntireRow.RowHeight = 15 'Below the race track
-    rows(objRace.NUMBER_ENROLLED * 2 + 20 + m_intTopRows).RowHeight = 20 'Headline of the ranking list
+    Range(rows(1 + objBasicData.TOP_ROWS), rows(5 + objBasicData.TOP_ROWS)).EntireRow.RowHeight = 15 'Above the race track
+    Range(rows(objRace.NUMBER_ENROLLED * 2 + 6 + 1 + objBasicData.TOP_ROWS), _
+        rows(objRace.NUMBER_ENROLLED * 2 + 52 + objBasicData.TOP_ROWS)).EntireRow.RowHeight = 15 'Below the race track
+    rows(objRace.NUMBER_ENROLLED * 2 + 20 + objBasicData.TOP_ROWS).RowHeight = 20 'Headline of the ranking list
 
     'Display race data on the top
-    With Cells(2 + m_intTopRows, 14) 'Race name, year, track and location
+    With Cells(2 + objBasicData.TOP_ROWS, 14) 'Race name, year, track and location
         .Font.name = "Arial Black"
         .Font.color = objOption.COL_TEXT
         .Value = objRace.RACE_NAME & " " & objRace.RACE_YEAR & " - " & objRace.TRACK_NAME & ", " & objRace.TRACK_LOCATION _
             & " (" & objRace.COUNTRY_NAME & ")"
     End With
-    With Cells(3 + m_intTopRows, 14) 'Race and track type
+    With Cells(3 + objBasicData.TOP_ROWS, 14) 'Race and track type
         .Font.name = "Arial"
         .Font.color = objOption.COL_TEXT
         .Font.Bold = True
@@ -1384,31 +1396,31 @@ Private Sub DrawRaceTrack()
             objRace.METRES & " " & GetText(g_arr_Text, "RACE009") & " - " & objRace.TRACK_SURFACE_TEXT
     End With
     
-    'Formatting: Columns on the left of the starting grid dependent on the zoom level
-    Columns(1).ColumnWidth = 2 * objOption.ZOOM_LEVEL 'Individual tactics
+    'Formatting: Columns on the left of the starting grid
+    Columns(1).ColumnWidth = 6
     Range(Columns(2), Columns(9)).ColumnWidth = m_dblTrackCellWidth 'Horse colours
-    Columns(10).ColumnWidth = objOption.ZOOM_LEVEL 'Current race section speed
-    Columns(11).ColumnWidth = 2 * objOption.ZOOM_LEVEL 'Horse numbers
-    Columns(12).ColumnWidth = 20 + (objOption.ZOOM_LEVEL * 6) 'Horse names
-    Range(Columns(14), Columns(m_intLeftColumns + 12)).ColumnWidth = m_dblTrackCellWidth 'Starting area
-    Columns(m_intLeftColumns + 4).ColumnWidth = 3 + objOption.ZOOM_LEVEL 'Starting gate numbers
-    Columns(13).ColumnWidth = objOption.ZOOM_LEVEL 'Momentum speed bars
+    Columns(10).ColumnWidth = 3 'Current race section speed
+    Columns(11).ColumnWidth = 6 'Horse numbers
+    Columns(12).ColumnWidth = 22 'Horse names
+    Range(Columns(14), Columns(objBasicData.LEFT_COLS + 12)).ColumnWidth = m_dblTrackCellWidth 'Starting area
+    Columns(objBasicData.LEFT_COLS + 4).ColumnWidth = 6 'Starting gate numbers
+    Columns(13).ColumnWidth = 3 'Momentum speed bars
     
     'Formatting: Background colour (behind the track)
     Cells.Interior.color = objOption.COL_BACK
         
     'Formatting: Race track to run (1 metre = 1 column)
-    Range(Columns(m_intLeftColumns + 13), Columns(objRace.METRES + m_intLeftColumns + 13 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR))).ColumnWidth = m_dblTrackCellWidth 'Column width
+    Range(Columns(objBasicData.LEFT_COLS + 13), Columns(objRace.METRES + objBasicData.LEFT_COLS + 13 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR))).ColumnWidth = m_dblTrackCellWidth 'Column width
     'Row height: Alternating higher and lower
-    For i = (6 + m_intTopRows) To (objRace.NUMBER_ENROLLED * 2 + 6 + m_intTopRows)
+    For i = (6 + objBasicData.TOP_ROWS) To (objRace.NUMBER_ENROLLED * 2 + 6 + objBasicData.TOP_ROWS)
         If objRace.RACE_ID = "CORONA2020" Then 'Racial distancing
-            rows(i).RowHeight = m_intTrackCellHeight * (2 - (i - (6 + m_intTopRows)) Mod 2)
+            rows(i).RowHeight = m_intTrackCellHeight * (2 - (i - (6 + objBasicData.TOP_ROWS)) Mod 2)
         Else 'Standard distance
-            rows(i).RowHeight = m_intTrackCellHeight / (2 - (i - (6 + m_intTopRows)) Mod 2)
+            rows(i).RowHeight = m_intTrackCellHeight / (2 - (i - (6 + objBasicData.TOP_ROWS)) Mod 2)
         End If
     Next i
-    Range(Cells(4 + m_intTopRows, 1), Cells(objRace.NUMBER_ENROLLED * 2 + 19 + m_intTopRows, objRace.METRES + m_intLeftColumns + 14 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR))).Interior.color = objRace.TRACK_COLOUR 'Track colour
-    With Range(Cells(4 + m_intTopRows, 1), Cells(objRace.NUMBER_ENROLLED * 2 + 8 + m_intTopRows, objRace.METRES + m_intLeftColumns + 14 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR))) 'Track font
+    Range(Cells(4 + objBasicData.TOP_ROWS, 1), Cells(objRace.NUMBER_ENROLLED * 2 + 19 + objBasicData.TOP_ROWS, objRace.METRES + objBasicData.LEFT_COLS + 14 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR))).Interior.color = objRace.TRACK_COLOUR 'Track colour
+    With Range(Cells(4 + objBasicData.TOP_ROWS, 1), Cells(objRace.NUMBER_ENROLLED * 2 + 8 + objBasicData.TOP_ROWS, objRace.METRES + objBasicData.LEFT_COLS + 14 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR))) 'Track font
         With .Font
             .name = "Arial"
             .size = m_intFontSize
@@ -1422,18 +1434,18 @@ Private Sub DrawRaceTrack()
     If objRace.STARTING_GATE = "Y" Then
         'Draw the gates
             For i = 6 To (objRace.NUMBER_ENROLLED * 2 + 6) Step 2 'One gate for each starting place
-                Range(Cells(i + m_intTopRows, m_intLeftColumns + 8), Cells(i + m_intTopRows, m_intLeftColumns + 13)).Interior.ColorIndex = 1
+                Range(Cells(i + objBasicData.TOP_ROWS, objBasicData.LEFT_COLS + 8), Cells(i + objBasicData.TOP_ROWS, objBasicData.LEFT_COLS + 13)).Interior.ColorIndex = 1
             Next i
-            Range(Cells(6 + m_intTopRows, m_intLeftColumns + 13), Cells(objRace.NUMBER_ENROLLED * 2 + 6 + m_intTopRows, m_intLeftColumns + 13)).Interior.ColorIndex = 1 'Close the gates
+            Range(Cells(6 + objBasicData.TOP_ROWS, objBasicData.LEFT_COLS + 13), Cells(objRace.NUMBER_ENROLLED * 2 + 6 + objBasicData.TOP_ROWS, objBasicData.LEFT_COLS + 13)).Interior.ColorIndex = 1 'Close the gates
         'Label the gates
-            With Range(Cells(7 + m_intTopRows, m_intLeftColumns + 4), Cells(objRace.NUMBER_ENROLLED * 2 + 5 + m_intTopRows, m_intLeftColumns + 4))
+            With Range(Cells(7 + objBasicData.TOP_ROWS, objBasicData.LEFT_COLS + 4), Cells(objRace.NUMBER_ENROLLED * 2 + 5 + objBasicData.TOP_ROWS, objBasicData.LEFT_COLS + 4))
                 .Font.color = objOption.COL_TEXT
                 .Font.size = m_intFontSize
                 .HorizontalAlignment = xlLeft
                 .VerticalAlignment = xlCenter
             End With
             For i = 1 To (objRace.NUMBER_ENROLLED) 'Gate numbers
-                Cells(5 + 2 * i + m_intTopRows, m_intLeftColumns + 4).Value = GetText(g_arr_Text, "RACE010") & " " & i
+                Cells(5 + 2 * i + objBasicData.TOP_ROWS, objBasicData.LEFT_COLS + 4).Value = GetText(g_arr_Text, "RACE010") & " " & i
             Next i
     End If
         
@@ -1441,10 +1453,10 @@ Private Sub DrawRaceTrack()
     For i = objOption.METRES_DISPLAY To (objRace.METRES - 20) Step objOption.METRES_DISPLAY
         
         #If Debugging Then 'For debugging purposes: Vertical line at each marker position
-            Range(Cells(5, i + m_intLeftColumns + 11), Cells(45, i + m_intLeftColumns + 11)).Interior.color = objOption.COL_TEXT
+            Range(Cells(5, i + objBasicData.LEFT_COLS + 11), Cells(45, i + objBasicData.LEFT_COLS + 11)).Interior.color = objOption.COL_TEXT
         #End If
         
-        With Cells(4 + m_intTopRows, i + m_intLeftColumns + 11) 'Above the track
+        With Cells(4 + objBasicData.TOP_ROWS, i + objBasicData.LEFT_COLS + 11) 'Above the track
             With .Font
                 .name = "Arial"
                 .color = objOption.COL_TEXT
@@ -1452,7 +1464,7 @@ Private Sub DrawRaceTrack()
             End With
             .Value = i & GetText(g_arr_Text, "RACE008") '"m"
         End With
-        With Cells(objRace.NUMBER_ENROLLED * 2 + 8 + m_intTopRows, i + m_intLeftColumns + 11) 'Below the track
+        With Cells(objRace.NUMBER_ENROLLED * 2 + 8 + objBasicData.TOP_ROWS, i + objBasicData.LEFT_COLS + 11) 'Below the track
             With .Font
                 .name = "Arial"
                 .color = objOption.COL_TEXT
@@ -1463,7 +1475,7 @@ Private Sub DrawRaceTrack()
     Next i
     
     'Formatting: Horse names on the left
-    With Range(Cells(6 + m_intTopRows, 11), Cells(objRace.NUMBER_ENROLLED * 2 + 7 + m_intTopRows, 12))
+    With Range(Cells(6 + objBasicData.TOP_ROWS, 11), Cells(objRace.NUMBER_ENROLLED * 2 + 7 + objBasicData.TOP_ROWS, 12))
         .Font.color = objRace.TRACK_COLOUR 'Track colour, so that the names are not visible yet
         .IndentLevel = 1 'Text indented
         .Font.size = m_intFontSize
@@ -1478,7 +1490,7 @@ Private Sub DrawRaceTrack()
             .Font.color = objRace.TRACK_COLOUR ' "Hide" the text
             .Font.Bold = True
         End With
-        Cells(m_intTopRows + 5, 1).Value = UCase(GetText(g_arr_Text, "RACEOPT070")) 'Caption
+        Cells(objBasicData.TOP_ROWS + 5, 1).Value = UCase(GetText(g_arr_Text, "RACEOPT070")) 'Caption
         For i = 1 To objRace.NUMBER_ENROLLED 'Race tactics of the horses
             If g_arr_varHorses(i, 0) = "START" Then
                 With Cells(g_arr_varHorses(i, 3), 1)
@@ -1488,7 +1500,7 @@ Private Sub DrawRaceTrack()
                 End With
             End If
         Next i
-        Columns(1).EntireColumn.AutoFit
+        Columns(1).EntireColumn.AUTOFIT
     End If
 
     'If chosen: Formattings for the current speed according to the race tactics
@@ -1497,7 +1509,7 @@ Private Sub DrawRaceTrack()
             .color = objRace.TRACK_COLOUR
             .Bold = True
         End With
-        Cells(m_intTopRows + 5, 10).Value = GetText(g_arr_Text, "RACEOPT067") 'Caption
+        Cells(objBasicData.TOP_ROWS + 5, 10).Value = GetText(g_arr_Text, "RACEOPT067") 'Caption
     End If
         
     'In case of a special race: Add the respective elements
@@ -1505,10 +1517,10 @@ Private Sub DrawRaceTrack()
     If objRace.SPECIAL = "PARTICULATES" Then Call DrawDust
         
     'Formatting: Finish area
-    Columns(objRace.METRES + m_intLeftColumns + 12).ColumnWidth = m_dblTrackCellWidth 'Width of the finish line
-    Range(Cells(5 + m_intTopRows, objRace.METRES + m_intLeftColumns + 12), _
-        Cells(objRace.NUMBER_ENROLLED * 2 + 7 + m_intTopRows, objRace.METRES + m_intLeftColumns + 12)).Interior.ColorIndex = 56 'Colour of the finish line: dark grey
-    With Cells(4 + m_intTopRows, objRace.METRES + m_intLeftColumns + 11) 'Race distance above the track
+    Columns(objRace.METRES + objBasicData.LEFT_COLS + 12).ColumnWidth = m_dblTrackCellWidth 'Width of the finish line
+    Range(Cells(5 + objBasicData.TOP_ROWS, objRace.METRES + objBasicData.LEFT_COLS + 12), _
+        Cells(objRace.NUMBER_ENROLLED * 2 + 7 + objBasicData.TOP_ROWS, objRace.METRES + objBasicData.LEFT_COLS + 12)).Interior.ColorIndex = 56 'Colour of the finish line: dark grey
+    With Cells(4 + objBasicData.TOP_ROWS, objRace.METRES + objBasicData.LEFT_COLS + 11) 'Race distance above the track
         With .Font
             .name = "Arial"
             .color = objOption.COL_TEXT
@@ -1516,7 +1528,7 @@ Private Sub DrawRaceTrack()
         End With
         .Value = objRace.METRES & GetText(g_arr_Text, "RACE008")
     End With
-    With Cells(objRace.NUMBER_ENROLLED * 2 + 8 + m_intTopRows, objRace.METRES + m_intLeftColumns + 11)  'Race distance below the track
+    With Cells(objRace.NUMBER_ENROLLED * 2 + 8 + objBasicData.TOP_ROWS, objRace.METRES + objBasicData.LEFT_COLS + 11)  'Race distance below the track
         With .Font
             .name = "Arial"
             .color = objOption.COL_TEXT
@@ -1525,13 +1537,13 @@ Private Sub DrawRaceTrack()
         .Value = objRace.METRES & GetText(g_arr_Text, "RACE008")
     End With
         
-    'Formatting: area behind the finish line
-    Columns(objRace.METRES + m_intLeftColumns + 14 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)).ColumnWidth = 18 + (objOption.ZOOM_LEVEL * 6)
-    Columns(objRace.METRES + m_intLeftColumns + 15 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)).ColumnWidth = objOption.ZOOM_LEVEL * 3
-    Range(Columns(objRace.METRES + m_intLeftColumns + 16 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)), Columns(objRace.METRES + m_intLeftColumns + 16 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR) + 300)).ColumnWidth = m_dblTrackCellWidth 'Column width
+    'Formatting: Area behind the finish line
+    Columns(objRace.METRES + objBasicData.LEFT_COLS + 14 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)).ColumnWidth = 36
+    Columns(objRace.METRES + objBasicData.LEFT_COLS + 15 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)).ColumnWidth = 9
+    Range(Columns(objRace.METRES + objBasicData.LEFT_COLS + 16 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)), Columns(objRace.METRES + objBasicData.LEFT_COLS + 16 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR) + 300)).ColumnWidth = m_dblTrackCellWidth 'Column width
     
     'Formatting: Horse names behind the finish line
-    With Range(Cells(5 + m_intTopRows, objRace.METRES + m_intLeftColumns + 14 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)), Cells(objRace.NUMBER_ENROLLED * 2 + 7 + (2 * objOption.SPEED_FACTOR) + m_intTopRows, objRace.METRES + m_intLeftColumns + 14 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)))
+    With Range(Cells(5 + objBasicData.TOP_ROWS, objRace.METRES + objBasicData.LEFT_COLS + 14 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)), Cells(objRace.NUMBER_ENROLLED * 2 + 7 + (2 * objOption.SPEED_FACTOR) + objBasicData.TOP_ROWS, objRace.METRES + objBasicData.LEFT_COLS + 14 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)))
         .IndentLevel = 1
         .Font.color = objOption.COL_TEXT
         .Font.size = m_intFontSize
@@ -1540,8 +1552,8 @@ Private Sub DrawRaceTrack()
     End With
 
     'Advertising area below the race track
-    Range(rows(objRace.NUMBER_ENROLLED * 2 + 9 + m_intTopRows), _
-        rows(objRace.NUMBER_ENROLLED * 2 + 19 + m_intTopRows)).EntireRow.RowHeight = m_intAdvertisingHeight 'Row height according to the zoom level
+    Range(rows(objRace.NUMBER_ENROLLED * 2 + 9 + objBasicData.TOP_ROWS), _
+        rows(objRace.NUMBER_ENROLLED * 2 + 19 + objBasicData.TOP_ROWS)).EntireRow.RowHeight = m_intAdvertisingHeight 'Row height
 
     If objRace.ADVERTISING = "Y" Then
         Dim advPos As Integer 'Column position for the next ad
@@ -1553,14 +1565,14 @@ Private Sub DrawRaceTrack()
         Call GetTrackGraphicsData("ADVERTISEMENT")
 
         If Not Not m_arr_varTrackGraphics Then 'Only if the array contains at least one element
-            advPos = m_intLeftColumns + 12
+            advPos = objBasicData.LEFT_COLS + 12
             For i = 1 To UBound(m_arr_varTrackGraphics) 'Loop through the array which contains the ads
                 If m_arr_varTrackGraphics(i) <> "" Then 'Skip if the element is empty
-                    z = 3 'Set the pointer to the first colour code
+                    Z = 3 'Set the pointer to the first colour code
                     For j = advPos To advPos + g_wksPIC.Cells(2, m_arr_varTrackGraphics(i)) - 1
-                        If j >= objRace.METRES + m_intLeftColumns + 12 Then Exit For 'Stop drawing behind the finish line
-                        For k = objRace.NUMBER_ENROLLED * 2 + 9 + m_intTopRows To objRace.NUMBER_ENROLLED * 2 + 19 + m_intTopRows
-                            Cells(k, j).Interior.color = g_wksPIC.Cells(z, m_arr_varTrackGraphics(i)).Value
+                        If j >= objRace.METRES + objBasicData.LEFT_COLS + 12 Then Exit For 'Stop drawing behind the finish line
+                        For k = objRace.NUMBER_ENROLLED * 2 + 9 + objBasicData.TOP_ROWS To objRace.NUMBER_ENROLLED * 2 + 19 + objBasicData.TOP_ROWS
+                            Cells(k, j).Interior.color = g_wksPIC.Cells(Z, m_arr_varTrackGraphics(i)).Value
 
                             'Take the colour mode into account
                             Select Case g_strColourMode
@@ -1569,10 +1581,10 @@ Private Sub DrawRaceTrack()
                                     Cells(k, j).Interior.color = PopArtColour(Cells(k, j).Interior.color)
                                 Case "LSD"
                                     If Cells(k, j).Interior.color > 0 And Cells(k, j).Interior.color < 16777215 Then _
-                                    Cells(k, j).Interior.color = PopArtColour(Int((16777215 - 0 + 1) * rnd + 0))
+                                    Cells(k, j).Interior.color = PopArtColour(Int((16777215 - 0 + 1) * Rnd + 0))
                                 Case "SMARTIES"
                                     If Cells(k, j).Interior.color > 0 And Cells(k, j).Interior.color < 16777215 Then _
-                                    Cells(k, j).Interior.color = Int((16777215 - 0 + 1) * rnd + 0)
+                                    Cells(k, j).Interior.color = Int((16777215 - 0 + 1) * Rnd + 0)
                                 Case "TV1960"
                                     Cells(k, j).Interior.color = GreyToLong(CInt(RGBtoGrey(CLng(Cells(k, j).Interior.color))))
                                 Case "DARKMODE"
@@ -1587,7 +1599,7 @@ Private Sub DrawRaceTrack()
                                 Case "24H"
                                     Cells(k, j).Interior.color = DuskDawn(Cells(k, j).Interior.color, Abs(22 * objOption.DAYLIGHT))
                             End Select
-                            z = z + 1
+                            Z = Z + 1
                         Next k 'Next row
                     Next j 'Next column
                     advPos = advPos + g_wksPIC.Cells(2, m_arr_varTrackGraphics(i)) 'Column for the beginning of the next ad
@@ -1602,45 +1614,33 @@ Private Sub DrawRaceTrack()
     Dim intSpecFinish As Integer 'Position of the last spectator
     Dim lngSpecColor As Long 'Colour of the spectators
 
-    intSpecStart = 12 + m_intLeftColumns + 100
+    intSpecStart = 12 + objBasicData.LEFT_COLS + 100
     
-    Select Case objOption.ZOOM_LEVEL
-        Case 3: 'Large
-            intSpecSize(1) = 10 'Standing
-            intSpecSize(2) = 11 'Standing
-            intSpecSize(3) = 12 'Standing
-            intSpecSize(4) = 8 'Sitting
-            intSpecSize(5) = 10 'Sitting
-            intSpecSize(6) = 11 'Sitting
-            intSpecSize(7) = -4131 'Horizontal alignment: xlLeft
-            intSpecSize(8) = -4108 'Vertical alignment: xlCenter
-        Case 2: 'Medium
-            intSpecSize(1) = 6 'Standing
-            intSpecSize(2) = 7 'Standing
-            intSpecSize(3) = 7 'Standing
-            intSpecSize(4) = 8 'Sitting
-            intSpecSize(5) = 9 'Sitting
-            intSpecSize(6) = 11 'Sitting
-            intSpecSize(7) = -4108 'Horizontal alignment: xlCenter
-            intSpecSize(8) = -4108 'Vertical alignment: xlCenter
-        Case 1: 'Small
-            intSpecSize(1) = 4 'Standing
-            intSpecSize(2) = 5 'Standing
-            intSpecSize(3) = 5 'Standing
-            intSpecSize(4) = 5 'Sitting
-            intSpecSize(5) = 5 'Sitting
-            intSpecSize(6) = 5 'Sitting
-            intSpecSize(7) = -4108 'Horizontal alignment: xlCenter
-            intSpecSize(8) = -4108 'Vertical alignment: xlCenter
-    End Select
+    intSpecSize(1) = 10 'Standing
+    intSpecSize(2) = 11 'Standing
+    intSpecSize(3) = 12 'Standing
+    intSpecSize(4) = 8 'Sitting
+    intSpecSize(5) = 10 'Sitting
+    intSpecSize(6) = 11 'Sitting
+    intSpecSize(7) = -4131 'Horizontal alignment: xlLeft
+    intSpecSize(8) = -4108 'Vertical alignment: xlCenter
     
     Select Case objRace.RACE_ID
         Case "SPACE"
             lngSpecColor = vbGreen 'Alien green
         Case "CORONA2020"
-            noSpectators = True
+            intNumberSpectators = 0 'No spectators allowed
+        Case "DD20"
+            intNumberSpectators = 4 'No common spectators allowed
+        Case "DD17", "DD18", "DD19", "GMP2018", "GMP2019FINAL"
+            intNumberSpectators = 100 'Full house
+        Case "GMP2020Q6", "GMP2020SF1", "GMP2020SF2", "GMP2020FINAL"
+            intNumberSpectators = 33 'Hamburg Corona Virus rules from July 1st 2020
+        Case "GMP2020Q1", "GMP2020Q2", "GMP2020Q3", "GMP2020Q4", "GMP2020Q5"
+            intNumberSpectators = 6 'Hamburg Corona Virus rules until June 30th 2020
         Case Else
             lngSpecColor = vbBlack
+            intNumberSpectators = objOption.SPECTATORS 'Spectators as chosen in the race options
     End Select
     Select Case g_strColourMode
         Case "DARKMODE"
@@ -1648,22 +1648,22 @@ Private Sub DrawRaceTrack()
     End Select
         
     'Spectators standing above the race track
-    If objOption.SPECTATORS > 0 And Not noSpectators Then
-        intSpecFinish = 12 + m_intLeftColumns + objRace.METRES + m_intColumsAfterFinish
+    If intNumberSpectators > 0 Then
+        intSpecFinish = 12 + objBasicData.LEFT_COLS + objRace.METRES + objBasicData.AFTER_FIN_COLS
         
         'Prepare the speactator settings
-        With Range(Cells(3 + m_intTopRows, intSpecStart), Cells(3 + m_intTopRows, intSpecFinish))
+        With Range(Cells(3 + objBasicData.TOP_ROWS, intSpecStart), Cells(3 + objBasicData.TOP_ROWS, intSpecFinish))
 
             .Font.color = lngSpecColor 'Spectator colour
         End With
 
         'Populate with spectators
         For i = intSpecStart To intSpecFinish
-            If Int(((100 / objOption.SPECTATORS) - 1 + 1) * rnd + 1) = 1 Then
-                With Cells(3 + m_intTopRows, i)
+            If Int(((100 / intNumberSpectators) - 1 + 1) * Rnd + 1) = 1 Then
+                With Cells(3 + objBasicData.TOP_ROWS, i)
                     .Value = "i" 'Spectator (standing)
-                    .Font.size = intSpecSize(Int((3 - 1 + 1) * rnd + 1)) 'Child, adult...
-                    .Font.Bold = Int((2 - 0 + 1) * rnd + 0) 'Slim (0) or not (1 or 2)
+                    .Font.size = intSpecSize(Int((3 - 1 + 1) * Rnd + 1)) 'Child, adult...
+                    .Font.Bold = Int((2 - 0 + 1) * Rnd + 0) 'Slim (0) or not (1 or 2)
                 End With
             End If
         Next
@@ -1677,30 +1677,19 @@ Private Sub DrawRaceTrack()
         Erase m_arr_varTrackGraphics
         
         'Element variables
-        Dim rep As Integer 'Number of repetitions of an element
+        Dim Rep As Integer 'Number of repetitions of an element
         Dim graphicsPos As Integer 'Column position for the next element
         Dim lngTreeColour(1 To 5) As Long 'Tree colours
         Dim lngMountainColour(1 To 4) As Long 'Mountain colours
         Dim lngSoilColour(1 To 3) As Long 'Soil colours
-        Dim intTextSize(1 To 3) As Integer 'Dependent on the zoom level
+        Dim intTextSize(1 To 3) As Integer
         Dim lngSpecialCounter As Long 'Counter for secial purposes
 
-        Select Case objOption.ZOOM_LEVEL
-            Case 3: 'Large
-                intTextSize(1) = 11
-                intTextSize(2) = 10
-                intTextSize(3) = 18
-            Case 2: 'Medium
-                intTextSize(1) = 11
-                intTextSize(2) = 8
-                intTextSize(3) = 16
-            Case 1: 'Small
-                intTextSize(1) = 11
-                intTextSize(2) = 6
-                intTextSize(3) = 12
-        End Select
+        intTextSize(1) = 11
+        intTextSize(2) = 10
+        intTextSize(3) = 18
 
-        graphicsPos = m_intLeftColumns + 12 'Set the pointer to the starting line
+        graphicsPos = objBasicData.LEFT_COLS + 12 'Set the pointer to the starting line
         
         'Define colours for random calculations
         lngTreeColour(1) = 2315831 'Dark green (leaves)
@@ -1723,18 +1712,18 @@ Private Sub DrawRaceTrack()
             k = 0
             For i = 1 To UBound(m_arr_varTrackGraphics) 'Loop through the array which contains the elements
                 If m_arr_varTrackGraphics(i) <> "" Then 'Skip if the element is empty
-                If k + g_wksPIC.Cells(2, m_arr_varTrackGraphics(i)) >= 12 + m_intLeftColumns + objRace.METRES + m_intColumsAfterFinish Then Exit For 'Stop drawing behind the finish line
+                If k + g_wksPIC.Cells(2, m_arr_varTrackGraphics(i)) >= 12 + objBasicData.LEFT_COLS + objRace.METRES + objBasicData.AFTER_FIN_COLS Then Exit For 'Stop drawing behind the finish line
                 
                 'Consider repetitions
-                For rep = 1 To g_wksPIC.Cells(4, m_arr_varTrackGraphics(i))
+                For Rep = 1 To g_wksPIC.Cells(4, m_arr_varTrackGraphics(i))
                 
-                    z = 6 'Set the pointer to the first colour code
+                    Z = 6 'Set the pointer to the first colour code
                     lngSpecialCounter = 0 'Reset the counter for special purposes
                 
-                    For j = m_intTopRows + 1 To m_intTopRows + 3
+                    For j = objBasicData.TOP_ROWS + 1 To objBasicData.TOP_ROWS + 3
                         For k = graphicsPos To graphicsPos + g_wksPIC.Cells(3, m_arr_varTrackGraphics(i)) - 1
-                            If Not IsEmpty(g_wksPIC.Cells(z, m_arr_varTrackGraphics(i))) Then 'Draw only if a value is found
-                                Cells(j, k).Interior.color = g_wksPIC.Cells(z, m_arr_varTrackGraphics(i)).Value
+                            If Not IsEmpty(g_wksPIC.Cells(Z, m_arr_varTrackGraphics(i))) Then 'Draw only if a value is found
+                                Cells(j, k).Interior.color = g_wksPIC.Cells(Z, m_arr_varTrackGraphics(i)).Value
                             End If
                             'Draw graphical elements
                             Select Case g_wksPIC.Cells(5, m_arr_varTrackGraphics(i))
@@ -1748,42 +1737,42 @@ Private Sub DrawRaceTrack()
                                         .Font.color = lngSpecColor
                                     End With
                                     'Populate tribunes with sitting spectators
-                                    If objOption.SPECTATORS > 0 And Not noSpectators And Cells(j, k).Interior.ColorIndex = 15 Then 'Seat found
-                                        If Int(((100 / objOption.SPECTATORS) - 1 + 1) * rnd + 1) = 1 Then
+                                    If intNumberSpectators > 0 And Cells(j, k).Interior.ColorIndex = 15 Then 'Seat found
+                                        If Int(((100 / intNumberSpectators) - 1 + 1) * Rnd + 1) = 1 Then
                                             With Cells(j, k)
                                                 .Value = "i" 'Spectator (sitting)
-                                                .Font.size = intSpecSize(Int((6 - 4 + 1) * rnd + 4)) 'Child, adult...
-                                                .Font.Bold = Int((2 - 0 + 1) * rnd + 0) 'Slim (0) or not (1 or 2)
+                                                .Font.size = intSpecSize(Int((6 - 4 + 1) * Rnd + 4)) 'Child, adult...
+                                                .Font.Bold = Int((2 - 0 + 1) * Rnd + 0) 'Slim (0) or not (1 or 2)
                                             End With
                                         End If
                                     End If
                                 Case "TREE", "MOUNTAINS"
                                     'Trees
                                     If Cells(j, k).Interior.color = lngTreeColour(1) Then  'Dark green leave found
-                                        If (Int((10 - 1 + 1) * rnd + 1)) = 10 Then Cells(j, k).Interior.color = lngTreeColour(2) '1 out of 10 leaves light green
+                                        If (Int((10 - 1 + 1) * Rnd + 1)) = 10 Then Cells(j, k).Interior.color = lngTreeColour(2) '1 out of 10 leaves light green
                                     End If
                                     If Cells(j, k).Interior.color = lngTreeColour(3) Then  'Medium green conifer found
-                                        If (Int((2 - 1 + 1) * rnd + 1)) = 2 Then Cells(j, k).Interior.color = lngTreeColour(4) '1 out of 2 conifers dark green
-                                        If (Int((6 - 1 + 1) * rnd + 1)) = 6 Then Cells(j, k).Interior.color = lngTreeColour(5) '1 out of 6 conifers light green
+                                        If (Int((2 - 1 + 1) * Rnd + 1)) = 2 Then Cells(j, k).Interior.color = lngTreeColour(4) '1 out of 2 conifers dark green
+                                        If (Int((6 - 1 + 1) * Rnd + 1)) = 6 Then Cells(j, k).Interior.color = lngTreeColour(5) '1 out of 6 conifers light green
                                     End If
                                     'Mountains
                                     If Cells(j, k).Interior.color = lngMountainColour(1) Then  'Mountain (rock) found
-                                        If (Int((6 - 1 + 1) * rnd + 1)) = 6 Then Cells(j, k).Interior.color = lngMountainColour(2) '1 out of 6 lighter grey
+                                        If (Int((6 - 1 + 1) * Rnd + 1)) = 6 Then Cells(j, k).Interior.color = lngMountainColour(2) '1 out of 6 lighter grey
                                     End If
                                     If Cells(j, k).Interior.color = lngMountainColour(3) Then  'Mountain (glacier) found
-                                        If (Int((6 - 1 + 1) * rnd + 1)) = 6 Then Cells(j, k).Interior.color = lngMountainColour(4) '1 out of 6 lighter blue
+                                        If (Int((6 - 1 + 1) * Rnd + 1)) = 6 Then Cells(j, k).Interior.color = lngMountainColour(4) '1 out of 6 lighter blue
                                     End If
                                 Case "MOUND"
                                     'Soil
                                     If Cells(j, k).Interior.color = lngSoilColour(1) Then 'Soil found
-                                        If (Int((6 - 1 + 1) * rnd + 1)) = 6 Then Cells(j, k).Interior.color = lngSoilColour(2) '1 out of 6 light brown
+                                        If (Int((6 - 1 + 1) * Rnd + 1)) = 6 Then Cells(j, k).Interior.color = lngSoilColour(2) '1 out of 6 light brown
                                     End If
                                     If Cells(j, k).Interior.color = lngSoilColour(1) Then  'Soil found
-                                        If (Int((3 - 1 + 1) * rnd + 1)) = 3 Then Cells(j, k).Interior.color = lngSoilColour(3) '1 out of 3 dark brown
+                                        If (Int((3 - 1 + 1) * Rnd + 1)) = 3 Then Cells(j, k).Interior.color = lngSoilColour(3) '1 out of 3 dark brown
                                     End If
                                 Case "HOTEL"
                                     Cells(j, k).ClearContents 'No spectators standing in front of the hotel
-                                    If j = m_intTopRows + 1 And k = graphicsPos + 2 Then
+                                    If j = objBasicData.TOP_ROWS + 1 And k = graphicsPos + 2 Then
                                         With Cells(j, k)
                                             .VerticalAlignment = xlCenter
                                             .Value = GetTrackGraphicsText(g_wksPIC.Cells(5, m_arr_varTrackGraphics(i)))
@@ -1796,7 +1785,7 @@ Private Sub DrawRaceTrack()
                                     End If
                                 Case "ENTRANCE", "CHIPS", "HOTDOGS", "MATJES", "FISHANDCHIPS", _
                                         "BEER", "BETS", "ROESTI", "FONDUE", "LIMO", "COLA", "CURRYWURST"
-                                    If j = m_intTopRows + 2 And k = graphicsPos + CInt((g_wksPIC.Cells(2, m_arr_varTrackGraphics(i)) / 2)) - 1 Then
+                                    If j = objBasicData.TOP_ROWS + 2 And k = graphicsPos + CInt((g_wksPIC.Cells(2, m_arr_varTrackGraphics(i)) / 2)) - 1 Then
                                         With Cells(j, k)
                                             .HorizontalAlignment = xlCenter
                                             .VerticalAlignment = xlCenter
@@ -1850,10 +1839,10 @@ Private Sub DrawRaceTrack()
                                     Cells(j, k).Interior.color = PopArtColour(Cells(j, k).Interior.color)
                                 Case "LSD"
                                     If Cells(j, k).Interior.color > 0 And Cells(j, k).Interior.color < 16777215 Then _
-                                    Cells(j, k).Interior.color = PopArtColour(Int((16777215 - 0 + 1) * rnd + 0))
+                                    Cells(j, k).Interior.color = PopArtColour(Int((16777215 - 0 + 1) * Rnd + 0))
                                 Case "SMARTIES"
                                     If Cells(j, k).Interior.color > 0 And Cells(j, k).Interior.color < 16777215 Then _
-                                    Cells(j, k).Interior.color = Int((16777215 - 0 + 1) * rnd + 0)
+                                    Cells(j, k).Interior.color = Int((16777215 - 0 + 1) * Rnd + 0)
                                 Case "TV1960"
                                     Cells(j, k).Interior.color = GreyToLong(CInt(RGBtoGrey(CLng(Cells(j, k).Interior.color))))
                                 Case "DARKMODE"
@@ -1875,20 +1864,25 @@ Private Sub DrawRaceTrack()
                                             Cells(j, k).Interior.color = DuskDawn(Cells(j, k).Interior.color, Abs(22 * objOption.DAYLIGHT))
                                     End Select
                             End Select
-                            z = z + 1 'Next colour code
+                            Z = Z + 1 'Next colour code
                         Next k 'Next column
                     Next j 'Next row
                     
                     graphicsPos = graphicsPos + g_wksPIC.Cells(3, m_arr_varTrackGraphics(i)) 'Column for the beginning of the next ad
-                Next rep
+                Next Rep
                       
                 End If
             Next i
         End If
     End If
 
+    If objOption.AUTOFIT Then Call AutoZoom("Race")
+    
+    'De-activate screen updating
+    Application.ScreenUpdating = False
+    
     'Place the cursor far away
-    Cells(100 + m_intTopRows, 1).Select
+    Cells(100 + objBasicData.TOP_ROWS, 1).Select
     
     'Activate screen updating
     Application.ScreenUpdating = True
@@ -1966,11 +1960,11 @@ Private Sub DrawMudflats()
             m_arr_lngLugworms(i) = g_wksPIC.Cells(i + 1, c)
         Next i
 
-        For i = (5 + m_intTopRows) To (objRace.NUMBER_ENROLLED * 2 + 7 + m_intTopRows) 'Loop through the rows
-            For j = m_intLeftColumns + 15 To objRace.METRES + m_intLeftColumns + 7 'Loop through the columns
-                intLugwormFrequency = Int(((100 / objOption.LUGWORMS) - 1 + 1) * rnd + 1) 'Lugworm or no lugworm
+        For i = (5 + objBasicData.TOP_ROWS) To (objRace.NUMBER_ENROLLED * 2 + 7 + objBasicData.TOP_ROWS) 'Loop through the rows
+            For j = objBasicData.LEFT_COLS + 15 To objRace.METRES + objBasicData.LEFT_COLS + 7 'Loop through the columns
+                intLugwormFrequency = Int(((100 / objOption.LUGWORMS) - 1 + 1) * Rnd + 1) 'Lugworm or no lugworm
                 If intLugwormFrequency = 1 Then
-                    intLugwormShape = Int((UBound(m_arr_lngLugworms) - 1 + 1) * rnd + 1) 'Shape of the lugworm
+                    intLugwormShape = Int((UBound(m_arr_lngLugworms) - 1 + 1) * Rnd + 1) 'Shape of the lugworm
                     
                     With Cells(i, j) 'Draw the lugworm
                         .Font.color = objOption.LUGWORM_COL 'Colour
@@ -1997,13 +1991,13 @@ Private Sub DrawMudflats()
     If objOption.TIDE > 0 Then
         objOption.PUDDLE_COL = 10791854 'Colour of the puddles in the Wadden Sea
         
-        For i = (5 + m_intTopRows) To (objRace.NUMBER_ENROLLED * 2 + 7 + m_intTopRows) 'Loop through the rows
-            For j = m_intLeftColumns + 15 To objRace.METRES + m_intLeftColumns + 7 'Loop through the columns
-                intPuddleFrequency = Int(((100 / objOption.TIDE) - 1 + 1) * rnd + 1) 'Puddle frequency
+        For i = (5 + objBasicData.TOP_ROWS) To (objRace.NUMBER_ENROLLED * 2 + 7 + objBasicData.TOP_ROWS) 'Loop through the rows
+            For j = objBasicData.LEFT_COLS + 15 To objRace.METRES + objBasicData.LEFT_COLS + 7 'Loop through the columns
+                intPuddleFrequency = Int(((100 / objOption.TIDE) - 1 + 1) * Rnd + 1) 'Puddle frequency
                 
                 If intPuddleFrequency = 1 Then
-                    intPuddleLength = Int((10 - 1 + 1) * rnd + 1) 'Puddle length (number of columns)
-                    intPuddleWidth = Int((2 - 1 + 1) * rnd + 1) 'Puddle width (number of rows)
+                    intPuddleLength = Int((10 - 1 + 1) * Rnd + 1) 'Puddle length (number of columns)
+                    intPuddleWidth = Int((2 - 1 + 1) * Rnd + 1) 'Puddle width (number of rows)
                     
                     'Draw the puddle
                     With Range(Cells(i, j), Cells(i + intPuddleWidth - 1, j + intPuddleLength - 1))
@@ -2028,13 +2022,6 @@ ERRORHANDLING:
     If g_errorLogging Then Call WriteErrorLog(VBA.Now, Err, Application.VBE.ActiveCodePane.CodeModule, "DrawMudflats()")
     Call basAuxiliary.CodeCrash
 End Sub
-
-Sub testtt()
-Dim intArr() As Variant
-intArr() = Array(18, 17, 4, 16, 9, 10)
-Debug.Print intArr(2)
-End Sub
-
 
 'Draw a layer of particulates
 Private Sub DrawDust()
@@ -2080,8 +2067,8 @@ Private Sub DrawHorseNames()
     If objOption.NAMES_FINISH Then
         For j = 1 To objRace.NUMBER_ENROLLED
             If g_arr_varHorses(j, 0) = "START" Then 'Only if the horse is starting
-                Cells(g_arr_varHorses(j, 3), objRace.METRES + m_intLeftColumns + 14 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)).Value = _
-                    g_arr_varHorses(j, 1) & " (#" & g_arr_varHorses(j, 11) & ")" 'Number and name
+                Cells(g_arr_varHorses(j, 3), objRace.METRES + objBasicData.LEFT_COLS + 14 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)).Value _
+                    = g_arr_varHorses(j, 1)                   'Horse name
             End If
         Next j
     End If
@@ -2101,7 +2088,7 @@ Private Sub MomentumFormattings()
     #End If
     
     Columns(13).ColumnWidth = 12
-    With Cells(5 + m_intTopRows, 13)
+    With Cells(5 + objBasicData.TOP_ROWS, 13)
         .HorizontalAlignment = xlLeft
         .Font.Bold = True
         .Font.color = objRace.TRACK_COLOUR 'Hide the text
@@ -2109,7 +2096,7 @@ Private Sub MomentumFormattings()
     End With
 
     'Speed bar
-    With Range(Cells(6 + m_intTopRows, 13), Cells(objRace.NUMBER_ENROLLED * 2 + 6 + m_intTopRows, 10))
+    With Range(Cells(6 + objBasicData.TOP_ROWS, 13), Cells(objRace.NUMBER_ENROLLED * 2 + 6 + objBasicData.TOP_ROWS, 10))
         .FormatConditions.AddDatabar
         .FormatConditions(.FormatConditions.count).ShowValue = False 'Show no values, just the bars
         With .FormatConditions(1)
@@ -2124,8 +2111,8 @@ Private Sub RaceInfoPopup()
     With frmRaceInfo
         'Place the pop-up in the upper left corner
         .StartUpPosition = 0
-        .top = ActiveWindow.top + 20
-        .left = ActiveWindow.left + 20
+        .top = ActiveWindow.top + 80
+        .left = ActiveWindow.left + 100
         .Height = 72
         .width = 225
         .BackColor = objOption.RACE_INFO_COL_B
@@ -2136,7 +2123,7 @@ Private Sub RaceInfoPopup()
             .BackColor = objOption.RACE_INFO_COL_B
             .ForeColor = objOption.RACE_INFO_COL_F
             .caption = objRace.RACE_NAME & " " & objRace.RACE_YEAR
-            .Font.size = 12
+            .Font.size = 8.5
             .Font.Bold = True
             .AutoSize = True
         End With
@@ -2313,7 +2300,7 @@ Private Sub RacePresentation(Optional test As Boolean)
                 Else 'No favourite and not in focus
                     .AddComment text:="#" & g_arr_varHorses(i, 11) & " " & g_arr_varHorses(i, 1) 'Horse number and name
                 End If
-                .Comment.Shape.TextFrame.Characters.Font.size = m_intFontSize 'Font size according to the zoom level
+                .Comment.Shape.TextFrame.Characters.Font.size = m_intFontSize 'Font size
                 .Comment.Shape.TextFrame.AutoSize = True 'Resize the comment field for perfect fit
             End With
             
@@ -2418,7 +2405,7 @@ Private Sub RacePresentation(Optional test As Boolean)
         Next i
     End If
     
-    'Delay before the start
+    'Delay at the end of the race
      If Not g_skipDelay Then Application.Wait (Now + TimeValue("0:00:04")) 'Delay
 
     Exit Sub
@@ -2428,7 +2415,7 @@ ERRORHANDLING:
 End Sub
 
 'Start of the race
-Private Sub RunRace()
+Private Sub RunRace(Optional ml As Boolean)
 
     'Variable used for statistical purposes
     Dim lngLoop As Long
@@ -2486,7 +2473,7 @@ Private Sub RunRace()
         For i = 1 To UBound(g_arr_varHorses)
             If g_arr_varHorses(i, 0) = "START" Then
                 Randomize
-                intRefuse = Int(((objOption.REFUSAL_RATE - 1) - 0 + 1) * rnd + 0) 'Random number between 0 and the value determined in the settings
+                intRefuse = Int(((objOption.REFUSAL_RATE - 1) - 0 + 1) * Rnd + 0) 'Random number between 0 and the value determined in the settings
                 If intRefuse = 0 Then
                     g_arr_varHorses(i, 0) = "REFUSED"
                     m_intHorsesRunning = m_intHorsesRunning - 1
@@ -2495,6 +2482,7 @@ Private Sub RunRace()
         Next i
     End If
     
+If Not ml Then 'Skip for Machine Learning simulation races
     'Check the air quality
     If objRace.SPECIAL = "PARTICULATES" Then
         lngAirPattern = objOption.PARTICULATES_PATTERN
@@ -2508,16 +2496,16 @@ Private Sub RunRace()
         'Calculation of the progress bar width
         dblProgressBar = Columns(12).width
         'Formattings
-        Call basAuxiliary.RaceInfoWorksheet(objOption.RACE_INFO_COL_B, objOption.RACE_INFO_COL_F, m_intTopRows, True)
+        Call basAuxiliary.RaceInfoWorksheet(objOption.RACE_INFO_COL_B, objOption.RACE_INFO_COL_F, objBasicData.TOP_ROWS, True)
     End If
         
     'Starting procedure with gates
     If objRace.STARTING_GATE = "Y" Then
         'Hide gate numbers
-        Range(Cells(7 + m_intTopRows, m_intLeftColumns + 4), Cells(5 + 2 * objRace.NUMBER_ENROLLED + m_intTopRows, m_intLeftColumns + 4)).Value = ""
+        Range(Cells(7 + objBasicData.TOP_ROWS, objBasicData.LEFT_COLS + 4), Cells(5 + 2 * objRace.NUMBER_ENROLLED + objBasicData.TOP_ROWS, objBasicData.LEFT_COLS + 4)).Value = ""
         If Not g_skipDelay Then Application.Wait (Now + TimeValue("0:00:04")) 'Delay
         'Open the gates
-        Range(Cells(6 + m_intTopRows, m_intLeftColumns + 13), Cells(objRace.NUMBER_ENROLLED * 2 + 6 + m_intTopRows, m_intLeftColumns + 13)).Interior.color = objRace.TRACK_COLOUR
+        Range(Cells(6 + objBasicData.TOP_ROWS, objBasicData.LEFT_COLS + 13), Cells(objRace.NUMBER_ENROLLED * 2 + 6 + objBasicData.TOP_ROWS, objBasicData.LEFT_COLS + 13)).Interior.color = objRace.TRACK_COLOUR
     End If
         
     If objOption.SPEECH Then Call SpeechOut(GetText(g_arr_Text, "RACE034")) 'Voice output if selected
@@ -2525,8 +2513,9 @@ Private Sub RunRace()
     'Race information data
     strMetres = GetText(g_arr_Text, "RACE008") '"m"
     strLeader = GetText(g_arr_Text, "RACEINFO001") '"The current leader is"
-    objStat.LEADER_POSITION = g_arr_varHorses(1, 4) - (m_intLeftColumns + 12) 'Position zero
+    objStat.LEADER_POSITION = g_arr_varHorses(1, 4) - (objBasicData.LEFT_COLS + 12) 'Position zero
     objStat.LEADER_NAME = ""
+End If
     
     'Reset variables used for the finish
     m_blnPhotofinish = False
@@ -2542,13 +2531,15 @@ Private Sub RunRace()
         Debug.Print "RACE START : " & Format(timeStart, "HH:MM:SS") & vbNewLine
     #End If
 
+If Not ml Then 'Skip for Machine Learning simulation races
     'In case of displaying speed bars for each horse: Show the caption
-    If objOption.MOMENTUM Then Cells(5 + m_intTopRows, 13).Font.color = objOption.COL_TEXT
+    If objOption.MOMENTUM Then Cells(5 + objBasicData.TOP_ROWS, 13).Font.color = objOption.COL_TEXT
     
     'In case of a tactical race with displaying the section speed: Show the caption
     If objOption.TACTICS And objOption.TACTICS_REVEAL_TAC Then
         Columns(10).Font.color = objOption.COL_TEXT ' "Reveal" the text
     End If
+End If
         
     'Game loop for the race
     Do Until m_intPlace > m_intHorsesRunning 'As long as at least one horse is running
@@ -2585,15 +2576,15 @@ Private Sub RunRace()
 
                 'Calculate the race section in which the horse runs
                 Select Case True
-                    Case (g_arr_varHorses(i, 4) - m_intLeftColumns - 12) < objRace.METRES * 1 / 6 'Section 1/6
+                    Case (g_arr_varHorses(i, 4) - objBasicData.LEFT_COLS - 12) < objRace.METRES * 1 / 6 'Section 1/6
                         g_arr_varHorses(i, 10) = 1
-                    Case (g_arr_varHorses(i, 4) - m_intLeftColumns - 12) < objRace.METRES * 2 / 6 'Section 2/6
+                    Case (g_arr_varHorses(i, 4) - objBasicData.LEFT_COLS - 12) < objRace.METRES * 2 / 6 'Section 2/6
                         g_arr_varHorses(i, 10) = 2
-                    Case (g_arr_varHorses(i, 4) - m_intLeftColumns - 12) < objRace.METRES * 3 / 6 'Section 3/6
+                    Case (g_arr_varHorses(i, 4) - objBasicData.LEFT_COLS - 12) < objRace.METRES * 3 / 6 'Section 3/6
                         g_arr_varHorses(i, 10) = 3
-                    Case (g_arr_varHorses(i, 4) - m_intLeftColumns - 12) < objRace.METRES * 4 / 6 'Section 4/6
+                    Case (g_arr_varHorses(i, 4) - objBasicData.LEFT_COLS - 12) < objRace.METRES * 4 / 6 'Section 4/6
                         g_arr_varHorses(i, 10) = 4
-                    Case (g_arr_varHorses(i, 4) - m_intLeftColumns - 12) < objRace.METRES * 5 / 6 'Section 5/6
+                    Case (g_arr_varHorses(i, 4) - objBasicData.LEFT_COLS - 12) < objRace.METRES * 5 / 6 'Section 5/6
                         g_arr_varHorses(i, 10) = 5
                     Case Else 'Section 6/6
                         g_arr_varHorses(i, 10) = 6
@@ -2618,10 +2609,12 @@ Private Sub RunRace()
                         Debug.Print "SPEC TACTICS *" & Mid(g_arr_varHorses(i, 25), intSectorLeader, 1)
                         Debug.Print "          >>> " & g_arr_varHorses(i, 8)
                     #End If
-
+                    
+If Not ml Then 'Skip for Machine Learning simulation races
                     If objOption.TACTICS_REVEAL_CURR Then
                         Cells(g_arr_varHorses(i, 3), 10).Value = Mid(g_arr_varHorses(i, 25), intSectorLeader, 1) & "x"
                     End If
+End If
                     
                 'In case of a tactical race (non-numeric, e.g. SMFSMF)
                 ElseIf (objOption.TACTICS = True And Not noTactics) Or yesTactics Then
@@ -2634,10 +2627,12 @@ Private Sub RunRace()
                         Debug.Print " >AVG B/F/L/T " & g_arr_varHorses(i, 8)
                     #End If
 
+If Not ml Then 'Skip for Machine Learning simulation races
                     If objOption.TACTICS_REVEAL_CURR Then
                         Cells(g_arr_varHorses(i, 3), 10).Value = Mid(g_arr_varHorses(i, 25), g_arr_varHorses(i, 10), 1)
                     End If
-                    
+End If
+
                 'In case of no tactics selected in the race options
                 Else
                     g_arr_varHorses(i, 8) = _
@@ -2647,6 +2642,7 @@ Private Sub RunRace()
                     #End If
                 End If
                 
+If Not ml Then 'Skip for Machine Learning simulation races
                 'If chosen: Highlight the current tactic section
                 If objOption.TACTICS And objOption.TACTICS_REVEAL_TAC Then
                     Cells(g_arr_varHorses(i, 3), 1) _
@@ -2664,12 +2660,13 @@ Private Sub RunRace()
                 'Remove slipstream illustration
                 If objOption.SLIPSTREAM And objOption.SLIPSTREAM_SHOW And g_arr_varHorses(i, 22) > 0 _
                     And Not noSlipstream Then
-                        If g_arr_varHorses(i, 4) <= objRace.METRES + m_intLeftColumns + 9 Then
+                        If g_arr_varHorses(i, 4) <= objRace.METRES + objBasicData.LEFT_COLS + 9 Then
                             Range(Cells(g_arr_varHorses(i, 3), g_arr_varHorses(i, 4) - 9), _
                                 Cells(g_arr_varHorses(i, 3), g_arr_varHorses(i, 4) - 12)).Interior.Pattern = lngAirPattern
                         End If
                 End If
-                    
+End If
+
                 'Reset slipstream value
                 g_arr_varHorses(i, 22) = 0
                 
@@ -2718,10 +2715,11 @@ Private Sub RunRace()
                     Debug.Print "COLUMN OLD >> " & g_arr_varHorses(i, 4)
                     Debug.Print "STEP WIDTH   >> " & g_arr_varHorses(i, 8)
                     Debug.Print "POSITION NEW >> " & g_arr_varHorses(i, 9) + g_arr_varHorses(i, 8)
-                    Debug.Print "COLUMN NEW >> " & m_intLeftColumns + 12 + Round((g_arr_varHorses(i, 9) + g_arr_varHorses(i, 8)) / 1000, 0)
+                    Debug.Print "COLUMN NEW >> " & objBasicData.LEFT_COLS + 12 + Round((g_arr_varHorses(i, 9) + g_arr_varHorses(i, 8)) / 1000, 0)
                     Debug.Print "METRES RUN >> " & Format(Round((g_arr_varHorses(i, 9) + g_arr_varHorses(i, 8)) / 1000, 2), "0.00")
                 #End If
 
+If Not ml Then 'Skip for Machine Learning simulation races
                 'Calculate and display the momentum
                 If objOption.MOMENTUM Then
                     If g_arr_varHorses(i, 0) = "START" Then
@@ -2731,10 +2729,10 @@ Private Sub RunRace()
                             Cells(g_arr_varHorses(i, 3), 13).Value = Round(WorksheetFunction.Average(Range(Cells(g_arr_varHorses(i, 3), 2), Cells(g_arr_varHorses(i, 3), 9))), 0)
                     End If
                 End If
-
+End If
             End If
         Next i 'End of the re-calculation of the position
-        
+
         #If Debugging Then
             Debug.Print 'Blank line
         #End If
@@ -2743,6 +2741,7 @@ Private Sub RunRace()
         For i = 1 To UBound(g_arr_varHorses)
             If g_arr_varHorses(i, 0) = "START" Then 'Only for horses that are still running
             
+If Not ml Then 'Skip for Machine Learning simulation races
                 Call basAuxiliary.ActivateRaceSheet
                                         
                 'Delete the horse on the worksheet
@@ -2756,7 +2755,7 @@ Private Sub RunRace()
                     If objOption.SPACE_ALIENS = enumAliens.unfriendly Then
                         Dim lngKidnapping As Long
                         Randomize
-                        lngKidnapping = Int(((20000 / objOption.SPACE_KIDNAPPINGRATE) - 0 + 1) * rnd + 0) 'Random number between 0 and 20000
+                        lngKidnapping = Int(((20000 / objOption.SPACE_KIDNAPPINGRATE) - 0 + 1) * Rnd + 0) 'Random number between 0 and 20000
                         If lngKidnapping = 0 Then
                             'Play the kidnapping sequence
                             For j = 1 To 100
@@ -2779,18 +2778,20 @@ Private Sub RunRace()
                         End If
                     End If
                 End If
-                            
+End If
+
                 'Calculate the new position of the horse
                 g_arr_varHorses(i, 9) = g_arr_varHorses(i, 9) + g_arr_varHorses(i, 8) 'Exact (internal) position (accuracy 0.25 millimetres)
                 'Make sure that no horse moves behind the starting line
                 If g_arr_varHorses(i, 9) < 0 Then g_arr_varHorses(i, 9) = 0
                 'Calculate the position on the worksheet (accuracy 1 metre)
-                g_arr_varHorses(i, 4) = m_intLeftColumns + 12 + Round(g_arr_varHorses(i, 9) / 1000, 0)
+                g_arr_varHorses(i, 4) = objBasicData.LEFT_COLS + 12 + Round(g_arr_varHorses(i, 9) / 1000, 0)
                         
+If Not ml Then 'Skip for Machine Learning simulation races
                 'Draw slipstream illustration (if selected in the race options)
                 If objOption.SLIPSTREAM And objOption.SLIPSTREAM_SHOW And g_arr_varHorses(i, 22) > 0 _
-                    And g_arr_varHorses(i, 4) > m_intLeftColumns + 12 _
-                    And g_arr_varHorses(i, 4) <= objRace.METRES + m_intLeftColumns + 7 _
+                    And g_arr_varHorses(i, 4) > objBasicData.LEFT_COLS + 12 _
+                    And g_arr_varHorses(i, 4) <= objRace.METRES + objBasicData.LEFT_COLS + 7 _
                     And Not noSlipstream Then
                         With Range(Cells(g_arr_varHorses(i, 3), g_arr_varHorses(i, 4) - 9), _
                             Cells(g_arr_varHorses(i, 3), g_arr_varHorses(i, 4) - 12))
@@ -2810,16 +2811,16 @@ Private Sub RunRace()
                 End If
                         
                 'Draw water splashes
-                If objRace.SQUIRT = True And g_arr_varHorses(i, 4) > 13 + m_intLeftColumns _
-                    And g_arr_varHorses(i, 4) <= objRace.METRES + m_intLeftColumns Then
+                If objRace.SQUIRT = True And g_arr_varHorses(i, 4) > 13 + objBasicData.LEFT_COLS _
+                    And g_arr_varHorses(i, 4) <= objRace.METRES + objBasicData.LEFT_COLS Then
                     
                     If Cells(g_arr_varHorses(i, 3), g_arr_varHorses(i, 4)).Interior.color = objOption.PUDDLE_COL Then
                     
                         'Calculate the squirt pattern by random
                         Randomize 'Initialize the random number generator
-                        intSquirtPattern = Int((18 - 16 + 1) * rnd + 16) 'Value between 16 and 18
-                        intSquirtLength = Int((8 - 4 + 1) * rnd + 4) 'Value between 4 and 8
-                        dblSquirtColour = (Int(2 - 0 + 0) * rnd + 0) - 1 'Value between -1.000... and +1.000...
+                        intSquirtPattern = Int((18 - 16 + 1) * Rnd + 16) 'Value between 16 and 18
+                        intSquirtLength = Int((8 - 4 + 1) * Rnd + 4) 'Value between 4 and 8
+                        dblSquirtColour = (Int(2 - 0 + 0) * Rnd + 0) - 1 'Value between -1.000... and +1.000...
     
                         With Range(Cells(g_arr_varHorses(i, 3) - 1, g_arr_varHorses(i, 4) - 6), _
                             Cells(g_arr_varHorses(i, 3) + 1, g_arr_varHorses(i, 4) - 6 - intSquirtLength)).Interior 'Squirt length between 4 and 8 metres
@@ -2889,7 +2890,7 @@ Private Sub RunRace()
                     
                 'SPECIAL: Wild boar track devastation illustration
                 If g_arr_varHorses(i, 24) = "WILD" _
-                     And g_arr_varHorses(i, 4) < objRace.METRES + m_intLeftColumns + 12 Then
+                     And g_arr_varHorses(i, 4) < objRace.METRES + objBasicData.LEFT_COLS + 12 Then
                      'Draw a race track devastation sign (#) under the left segment of the wild boar
                      If IsArray(g_arr_varHorses(i, 2)) Then 'Multicoloured wild boar
                         With Cells(g_arr_varHorses(i, 3), g_arr_varHorses(i, 4) - 7)
@@ -2906,19 +2907,21 @@ Private Sub RunRace()
     
                 'Draw hoof prints behind the horse (if selected in the race options)
                 If objOption.HOOFPRINTS And IsEmpty(Cells(g_arr_varHorses(i, 3), g_arr_varHorses(i, 4) - 8)) _
-                    And g_arr_varHorses(i, 4) > 13 + m_intLeftColumns _
+                    And g_arr_varHorses(i, 4) > 13 + objBasicData.LEFT_COLS _
                     And Not g_arr_varHorses(i, 24) = "WILD" Then _
                     Cells(g_arr_varHorses(i, 3), g_arr_varHorses(i, 4) - 8).Value = "'-" 'Hoof print character
             
+End If
             End If
             
+If Not ml Then 'Skip for Machine Learning simulation races
             'Horizontal scrolling dependent on the camera mode
             If objOption.FOCUSED_RUN = enumCamera.standard Then 'Scrolling in standard mode
                 'Check whether the leading horse is near the right edge of the screen
                 If g_arr_varHorses(i, 4) > ActiveWindow.VisibleRange.Columns(ActiveWindow.VisibleRange.Columns.count).Column _
                             - ((ActiveWindow.VisibleRange.Columns(ActiveWindow.VisibleRange.Columns.count).Column _
                             - ActiveWindow.VisibleRange.Column) * 1 / 10) _
-                    And ActiveWindow.VisibleRange.Columns(ActiveWindow.VisibleRange.Columns.count).Column <= objRace.METRES + m_intLeftColumns + 2 Then
+                    And ActiveWindow.VisibleRange.Columns(ActiveWindow.VisibleRange.Columns.count).Column <= objRace.METRES + objBasicData.LEFT_COLS + 2 Then
                         'Standard scrolling in the style of paging
                         ActiveWindow.ScrollColumn = ActiveWindow.VisibleRange.Column _
                                             + ((ActiveWindow.VisibleRange.Columns(ActiveWindow.VisibleRange.Columns.count).Column _
@@ -2967,23 +2970,25 @@ Private Sub RunRace()
                     End If
                 End If
             End If
-            
+
             'Refresh the data of the current leader
-            If (g_arr_varHorses(i, 4) - m_intLeftColumns - 12) > objStat.LEADER_POSITION Then
-                objStat.LEADER_POSITION = g_arr_varHorses(i, 4) - m_intLeftColumns - 12 'Position of the leader
+            If (g_arr_varHorses(i, 4) - objBasicData.LEFT_COLS - 12) > objStat.LEADER_POSITION Then
+                objStat.LEADER_POSITION = g_arr_varHorses(i, 4) - objBasicData.LEFT_COLS - 12 'Position of the leader
                 objStat.LEADER_NAME = g_arr_varHorses(i, 1) 'Name of the leader
                 objStat.LEADER_NR = g_arr_varHorses(i, 11) 'Number of the leader
             End If
-            
+End If
+
         Next i
         
+If Not ml Then 'Skip for Machine Learning simulation races
         'Show race information (if selected in the race options)
         If objOption.RACE_INFO Then
             'Refresh the race information data (on the worksheet)
             If objOption.RACE_INFO_WKS Then
                 'Race distance progress bar
                 If objOption.RACE_INFO_PROGRESS Then
-                    With Cells(3 + m_intTopRows, 11)
+                    With Cells(3 + objBasicData.TOP_ROWS, 11)
                         'Relation of metres run and the total race distance
                         .Value = objStat.LEADER_POSITION & strMetres & " / " & objRace.METRES & strMetres
                     End With
@@ -2996,14 +3001,14 @@ Private Sub RunRace()
                 If objOption.RACE_INFO_LEADER Then
                     'Only in the range between 20 meters after the start and 20 meters before the finish
                     If objStat.LEADER_POSITION < 20 Or objStat.LEADER_POSITION > (objRace.METRES - 20) Then
-                        Cells(1 + m_intTopRows, 2).Value = " "
-                        Cells(2 + m_intTopRows, 11).Value = " "
+                        Cells(1 + objBasicData.TOP_ROWS, 2).Value = " "
+                        Cells(2 + objBasicData.TOP_ROWS, 11).Value = " "
                     'Don´t refresh in every loop
                     ElseIf objStat.LEADER_POSITION Mod 5 = 0 Then
-                        With Cells(1 + m_intTopRows, 2)
+                        With Cells(1 + objBasicData.TOP_ROWS, 2)
                             .Value = strLeader
                         End With
-                        With Cells(2 + m_intTopRows, 11)
+                        With Cells(2 + objBasicData.TOP_ROWS, 11)
                             .Value = objStat.LEADER_NAME
                         End With
                     End If
@@ -3033,6 +3038,7 @@ Private Sub RunRace()
                 End If
             End If
         End If
+End If
             
         'Check whether one or more horses have reached the finish line
         For i = 1 To UBound(g_arr_varHorses) 'Loop through the horses
@@ -3049,11 +3055,15 @@ Private Sub RunRace()
                     #End If
                     g_arr_varHorses(i, 0) = "CALCULATION" 'Set the horse´s status
                     m_intHorsesFinishing = m_intHorsesFinishing + 1 'Count the number of horses that pass the finish line in this loop
+                    
+If Not ml Then 'Skip for Machine Learning simulation races
                     If objOption.MOMENTUM Then Cells(g_arr_varHorses(i, 3), 13).ClearContents
                     If objOption.TACTICS Then
                         If objOption.TACTICS_REVEAL_CURR Then Cells(g_arr_varHorses(i, 3), 10).ClearContents
                         If objOption.TACTICS_REVEAL_TAC Then Cells(g_arr_varHorses(i, 3), 1).Font.color = objOption.COL_TEXT
                     End If
+End If
+                
                 End If
             End If
         Next i
@@ -3064,7 +3074,11 @@ Private Sub RunRace()
                 If m_intHorsesFinishing > 1 Then
                     m_blnPhotofinish = True 'In case of more than one possible winners: Flag for a tight finish
                 End If
+                
+If Not ml Then 'Skip for Machine Learning simulation races
                 Call CreateFinishPhoto 'Create a photo of the finish
+End If
+            
             End If
             m_blnWin = True 'Set true so that the photo of the finish is only created once
             Call CalculateRanking 'Calculate the ranking
@@ -3080,24 +3094,25 @@ Private Sub RunRace()
         Debug.Print "RACE LOOPS : " & lngLoop & vbNewLine
     #End If
         
+If Not ml Then 'Skip for Machine Learning simulation races
     'Remove race information
     If objOption.RACE_INFO Then
         If objOption.RACE_INFO_POP Then Unload frmRaceInfo 'Close the pop-up
-        If objOption.RACE_INFO_WKS Then Call basAuxiliary.RaceInfoWorksheet(objOption.COL_BACK, 0, m_intTopRows, False) 'Delete on the worksheet
+        If objOption.RACE_INFO_WKS Then Call basAuxiliary.RaceInfoWorksheet(objOption.COL_BACK, 0, objBasicData.TOP_ROWS, False) 'Delete on the worksheet
     End If
     
     'Remove section race speed caption
-    If objOption.TACTICS_REVEAL_CURR Then Cells(5 + m_intTopRows, 10).ClearContents
+    If objOption.TACTICS_REVEAL_CURR Then Cells(5 + objBasicData.TOP_ROWS, 10).ClearContents
     
     'Remove race speed caption
-    If objOption.MOMENTUM Then Cells(5 + m_intTopRows, 13).ClearContents
+    If objOption.MOMENTUM Then Cells(5 + objBasicData.TOP_ROWS, 13).ClearContents
     
     'In case of a photo finish
     If m_blnPhotofinish = True Then
         Call basAuxiliary.ActivateRaceSheet
         If Not g_skipDelay Then Application.Wait (Now + TimeValue("0:00:04")) 'Delay
         'Clear text "PHOTO FINISH!"
-        With Cells(2 + m_intTopRows, objRace.METRES + m_intLeftColumns + 14 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR))
+        With Cells(2 + objBasicData.TOP_ROWS, objRace.METRES + objBasicData.LEFT_COLS + 14 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR))
             .Clear
             .Interior.color = objOption.COL_BACK
             If objRace.SPECIAL = "PARTICULATES" Then .Interior.Pattern = objOption.PARTICULATES_PATTERN
@@ -3109,12 +3124,12 @@ Private Sub RunRace()
             Or (objOption.RACE_INFO And objOption.RACE_INFO_WKS) _
                 Then Call basAuxiliary.Freeze(0, 0, False)
         'Scroll to the area where the photo will be displayed
-        ActiveWindow.ScrollColumn = objRace.METRES + m_intLeftColumns + 15 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)
+        ActiveWindow.ScrollColumn = objRace.METRES + objBasicData.LEFT_COLS + 15 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)
         'Black photo background
-        Range(Cells(5 + m_intTopRows, objRace.METRES + m_intLeftColumns + 16 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)), _
-            Cells(objRace.NUMBER_ENROLLED * 2 + 7 + m_intTopRows, objRace.METRES + m_intLeftColumns + 175 + m_intColumsAfterFinish + (2 * 10 * objOption.SPEED_FACTOR))).Interior.ColorIndex = 1
+        Range(Cells(5 + objBasicData.TOP_ROWS, objRace.METRES + objBasicData.LEFT_COLS + 16 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)), _
+            Cells(objRace.NUMBER_ENROLLED * 2 + 7 + objBasicData.TOP_ROWS, objRace.METRES + objBasicData.LEFT_COLS + 175 + objBasicData.AFTER_FIN_COLS + (2 * 10 * objOption.SPEED_FACTOR))).Interior.ColorIndex = 1
         'Display text "Photo creation"
-        With Cells(4 + m_intTopRows, objRace.METRES + m_intLeftColumns + 16 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR))
+        With Cells(4 + objBasicData.TOP_ROWS, objRace.METRES + objBasicData.LEFT_COLS + 16 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR))
             .Value = GetText(g_arr_Text, "RACE026")
             .Font.color = objOption.COL_TEXT
         End With
@@ -3122,15 +3137,17 @@ Private Sub RunRace()
         'Show the photo of the tight finish
         Call DrawFinishPhoto
         'Display text "Photo evaluation"
-        With Cells(4 + m_intTopRows, objRace.METRES + m_intLeftColumns + 16 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR))
+        With Cells(4 + objBasicData.TOP_ROWS, objRace.METRES + objBasicData.LEFT_COLS + 16 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR))
             .Value = GetText(g_arr_Text, "RACE027")
             .Font.color = objOption.COL_TEXT
         End With
     End If
     
-    If Not g_skipDelay Then Application.Wait (Now + TimeValue("0:00:04")) 'Delay
+    If Not g_skipDelay Then Application.Wait (Now + TimeValue("0:00:02")) 'Delay
     'Clear text above the photo
-    Cells(4 + m_intTopRows, objRace.METRES + m_intLeftColumns + 16 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)).ClearContents
+    Cells(4 + objBasicData.TOP_ROWS, objRace.METRES + objBasicData.LEFT_COLS + 16 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)).ClearContents
+
+End If
 
     Exit Sub
 ERRORHANDLING:
@@ -3157,7 +3174,7 @@ Public Sub ChangeColourMode(cmode As String)
         Call RS_InactivateCommandButtons 'Deactivate some buttons
         objRace.STARTED = False
     Else
-    
+        Call TitleScreen
     End If
 End Sub
 
@@ -3264,25 +3281,36 @@ Private Sub RankNotFinished()
     Next i
 End Sub
 
+'Write the placements to the main array
+Private Sub TransmitPlacements()
+    For i = 1 To UBound(m_arr_varResults)
+        For j = 1 To UBound(g_arr_varHorses)
+            If m_arr_varResults(i, 2) = g_arr_varHorses(j, 11) Then 'Compare starting numbers
+                g_arr_varHorses(j, 12) = m_arr_varResults(i, 1) 'Transfer the placement
+            End If
+        Next j
+    Next i
+End Sub
+
 'Formattings for the photo of the finish and the ranking list
 Private Sub FormatPhotoAndRanking()
 
     'Texts in case of a photo finish
-    Cells(2 + m_intTopRows, _
-        objRace.METRES + m_intLeftColumns + 14 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)) _
+    Cells(2 + objBasicData.TOP_ROWS, _
+        objRace.METRES + objBasicData.LEFT_COLS + 14 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)) _
         .Font.name = "Arial Black" '"PHOTO FINISH!"
-    With Cells(4 + m_intTopRows, _
-            objRace.METRES + m_intLeftColumns + 16 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)) '"Photo..."
+    With Cells(4 + objBasicData.TOP_ROWS, _
+            objRace.METRES + objBasicData.LEFT_COLS + 16 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)) '"Photo..."
         .Font.size = 14
         .Font.Bold = True
     End With
 
     'Column width
-    Range(Columns(objRace.METRES + m_intLeftColumns + 16 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)), _
-        Columns(objRace.METRES + m_intLeftColumns + 175 + m_intColumsAfterFinish + (2 * 10 * objOption.SPEED_FACTOR))) _
-        .ColumnWidth = m_dblRankingsWidth / 10 'Columns for the photo of the finish
-    Columns(objRace.METRES + m_intLeftColumns + 176 + m_intColumsAfterFinish + (2 * 10 * objOption.SPEED_FACTOR)) _
-        .ColumnWidth = m_dblRankingsWidth   'Column behind the photo of the finish
+    Range(Columns(objRace.METRES + objBasicData.LEFT_COLS + 16 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)), _
+        Columns(objRace.METRES + objBasicData.LEFT_COLS + 175 + objBasicData.AFTER_FIN_COLS + (2 * 10 * objOption.SPEED_FACTOR))) _
+        .ColumnWidth = objBasicData.RANK_WIDTH / 10 'Columns for the photo of the finish
+    Columns(objRace.METRES + objBasicData.LEFT_COLS + 176 + objBasicData.AFTER_FIN_COLS + (2 * 10 * objOption.SPEED_FACTOR)) _
+        .ColumnWidth = objBasicData.RANK_WIDTH   'Column behind the photo of the finish
 
 End Sub
 
@@ -3306,22 +3334,22 @@ Private Sub CreateFinishPhoto()
 
             'Announcement "PHOTO FINISH!"
             If objOption.SPEECH Then Call SpeechOut(GetText(g_arr_Text, "RACE025")) 'Voice output if selected
-            With Cells(2 + m_intTopRows, objRace.METRES + m_intLeftColumns + 14 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR))
+            With Cells(2 + objBasicData.TOP_ROWS, objRace.METRES + objBasicData.LEFT_COLS + 14 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR))
                 .Value = GetText(g_arr_Text, "RACE025")
                 .Font.color = objOption.COL_TEXT
             End With
             
             'Alternate the track colour rapidly between black and white behind the finish line
             For k = 1 To 8 'Run the loop 8 times
-                With Range(Cells(5 + m_intTopRows, objRace.METRES + m_intLeftColumns + 14 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)), _
-                    Cells(objRace.NUMBER_ENROLLED * 2 + 7 + m_intTopRows, objRace.METRES + m_intLeftColumns + 14 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)))
+                With Range(Cells(5 + objBasicData.TOP_ROWS, objRace.METRES + objBasicData.LEFT_COLS + 14 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)), _
+                    Cells(objRace.NUMBER_ENROLLED * 2 + 7 + objBasicData.TOP_ROWS, objRace.METRES + objBasicData.LEFT_COLS + 14 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)))
                         .Interior.ColorIndex = 1 'Black
                         .Interior.ColorIndex = 0 'White
                 End With
             Next k
             'Reset the track to its original colour
-            With Range(Cells(5 + m_intTopRows, objRace.METRES + m_intLeftColumns + 14 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)), _
-                Cells(objRace.NUMBER_ENROLLED * 2 + 7 + m_intTopRows, objRace.METRES + m_intLeftColumns + 14 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)))
+            With Range(Cells(5 + objBasicData.TOP_ROWS, objRace.METRES + objBasicData.LEFT_COLS + 14 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)), _
+                Cells(objRace.NUMBER_ENROLLED * 2 + 7 + objBasicData.TOP_ROWS, objRace.METRES + objBasicData.LEFT_COLS + 14 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)))
                     .Interior.color = objRace.TRACK_COLOUR
                     If objRace.SPECIAL = "PARTICULATES" Then .Interior.Pattern = objOption.PARTICULATES_PATTERN
             End With
@@ -3365,24 +3393,24 @@ Private Sub DrawFinishPhoto()
     Application.ScreenUpdating = False 'Deactivate screen updating
     
     'Clear the range on which the photo is to be shown
-    Range(Cells(5 + m_intTopRows, _
-        objRace.METRES + m_intLeftColumns + 16 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)), _
-        Cells(objRace.NUMBER_ENROLLED * 2 + 8 + m_intTopRows, _
-        objRace.METRES + m_intLeftColumns + 175 + m_intColumsAfterFinish + (2 * 10 * objOption.SPEED_FACTOR))) _
+    Range(Cells(5 + objBasicData.TOP_ROWS, _
+        objRace.METRES + objBasicData.LEFT_COLS + 16 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)), _
+        Cells(objRace.NUMBER_ENROLLED * 2 + 8 + objBasicData.TOP_ROWS, _
+        objRace.METRES + objBasicData.LEFT_COLS + 175 + objBasicData.AFTER_FIN_COLS + (2 * 10 * objOption.SPEED_FACTOR))) _
             .Clear
     
     'Draw a frame around the photo
-    Range(Cells(5 + m_intTopRows, _
-        objRace.METRES + m_intLeftColumns + 16 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)), _
-        Cells(objRace.NUMBER_ENROLLED * 2 + 8 + m_intTopRows, _
-        objRace.METRES + m_intLeftColumns + 175 + m_intColumsAfterFinish + (2 * 10 * objOption.SPEED_FACTOR))) _
+    Range(Cells(5 + objBasicData.TOP_ROWS, _
+        objRace.METRES + objBasicData.LEFT_COLS + 16 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)), _
+        Cells(objRace.NUMBER_ENROLLED * 2 + 8 + objBasicData.TOP_ROWS, _
+        objRace.METRES + objBasicData.LEFT_COLS + 175 + objBasicData.AFTER_FIN_COLS + (2 * 10 * objOption.SPEED_FACTOR))) _
             .BorderAround color:=objOption.COL_TEXT, Weight:=xlMedium
             
     'Draw a horizontal line for the section with the scale markers
-    With Range(Cells(objRace.NUMBER_ENROLLED * 2 + 7 + m_intTopRows, _
-        objRace.METRES + m_intLeftColumns + 16 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)), _
-        Cells(objRace.NUMBER_ENROLLED * 2 + 7 + m_intTopRows, _
-        objRace.METRES + m_intLeftColumns + 175 + m_intColumsAfterFinish + (2 * 10 * objOption.SPEED_FACTOR))) _
+    With Range(Cells(objRace.NUMBER_ENROLLED * 2 + 7 + objBasicData.TOP_ROWS, _
+        objRace.METRES + objBasicData.LEFT_COLS + 16 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)), _
+        Cells(objRace.NUMBER_ENROLLED * 2 + 7 + objBasicData.TOP_ROWS, _
+        objRace.METRES + objBasicData.LEFT_COLS + 175 + objBasicData.AFTER_FIN_COLS + (2 * 10 * objOption.SPEED_FACTOR))) _
             .Borders(xlEdgeBottom)
                 .LineStyle = xlContinuous
                 .ColorIndex = colourLines
@@ -3390,8 +3418,8 @@ Private Sub DrawFinishPhoto()
     End With
     
     'Write the race data as a caption
-    With Cells(5 + m_intTopRows, _
-        objRace.METRES + m_intLeftColumns + 16 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR))
+    With Cells(5 + objBasicData.TOP_ROWS, _
+        objRace.METRES + objBasicData.LEFT_COLS + 16 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR))
             .Font.name = "Arial"
             .Font.Bold = True
             .Font.color = colourNames
@@ -3401,29 +3429,29 @@ Private Sub DrawFinishPhoto()
     End With
 
     'Draw the race track and the finish line
-    Range(Cells(5 + m_intTopRows, _
-        objRace.METRES + m_intLeftColumns + 16 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)), _
-        Cells(objRace.NUMBER_ENROLLED * 2 + 7 + m_intTopRows, _
-        objRace.METRES + m_intLeftColumns + 175 + m_intColumsAfterFinish + (2 * 10 * objOption.SPEED_FACTOR))) _
+    Range(Cells(5 + objBasicData.TOP_ROWS, _
+        objRace.METRES + objBasicData.LEFT_COLS + 16 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)), _
+        Cells(objRace.NUMBER_ENROLLED * 2 + 7 + objBasicData.TOP_ROWS, _
+        objRace.METRES + objBasicData.LEFT_COLS + 175 + objBasicData.AFTER_FIN_COLS + (2 * 10 * objOption.SPEED_FACTOR))) _
             .Interior.color = colourTrack 'Background
-    Range(Cells(objRace.NUMBER_ENROLLED * 2 + 8 + m_intTopRows, _
-        objRace.METRES + m_intLeftColumns + 16 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)), _
-        Cells(objRace.NUMBER_ENROLLED * 2 + 8 + m_intTopRows, _
-        objRace.METRES + m_intLeftColumns + 175 + m_intColumsAfterFinish + (2 * 10 * objOption.SPEED_FACTOR))) _
+    Range(Cells(objRace.NUMBER_ENROLLED * 2 + 8 + objBasicData.TOP_ROWS, _
+        objRace.METRES + objBasicData.LEFT_COLS + 16 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)), _
+        Cells(objRace.NUMBER_ENROLLED * 2 + 8 + objBasicData.TOP_ROWS, _
+        objRace.METRES + objBasicData.LEFT_COLS + 175 + objBasicData.AFTER_FIN_COLS + (2 * 10 * objOption.SPEED_FACTOR))) _
             .Interior.color = colourScale 'Stripe for the scale markers
-    Range(Cells(5 + m_intTopRows, _
-        objRace.METRES + m_intLeftColumns + 155 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)), _
-        Cells(objRace.NUMBER_ENROLLED * 2 + 7 + m_intTopRows, _
-        objRace.METRES + m_intLeftColumns + 155 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR))) _
+    Range(Cells(5 + objBasicData.TOP_ROWS, _
+        objRace.METRES + objBasicData.LEFT_COLS + 155 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)), _
+        Cells(objRace.NUMBER_ENROLLED * 2 + 7 + objBasicData.TOP_ROWS, _
+        objRace.METRES + objBasicData.LEFT_COLS + 155 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR))) _
         .Interior.ColorIndex = colourLines 'Finish line
         
     'Draw track markers ("XXX metres")
     For i = 1 To (15 + 2 * objOption.SPEED_FACTOR)
-        Cells(objRace.NUMBER_ENROLLED * 2 + 7 + m_intTopRows, _
-            i * 10 + objRace.METRES + m_intLeftColumns + 15 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)) _
+        Cells(objRace.NUMBER_ENROLLED * 2 + 7 + objBasicData.TOP_ROWS, _
+            i * 10 + objRace.METRES + objBasicData.LEFT_COLS + 15 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)) _
             .Interior.ColorIndex = colourLines 'Scale (vertical bars)
-        With Cells(objRace.NUMBER_ENROLLED * 2 + 8 + m_intTopRows, _
-            i * 10 + objRace.METRES + m_intLeftColumns + 13 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR))
+        With Cells(objRace.NUMBER_ENROLLED * 2 + 8 + objBasicData.TOP_ROWS, _
+            i * 10 + objRace.METRES + objBasicData.LEFT_COLS + 13 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR))
             .Value = (objRace.METRES - 14 + i) & GetText(g_arr_Text, "RACE008")
             .Font.color = vbBlack 'Scale (metres)
         End With
@@ -3434,8 +3462,8 @@ Private Sub DrawFinishPhoto()
     Dim racetrackMinimumColumn As Long 'Minimum horse head position to appear on the photo
     Dim currentDrawColumn As Integer 'Column for drawing the current segment
 
-    photoLeftMargin = objRace.METRES + m_intLeftColumns + 16 _
-        + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR) 'Get the left column of the photo
+    photoLeftMargin = objRace.METRES + objBasicData.LEFT_COLS + 16 _
+        + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR) 'Get the left column of the photo
     racetrackMinimumColumn = objRace.METRES * 10 - 139 'Get the minimum position to appear
                 
     'Paint the horses
@@ -3453,8 +3481,8 @@ Private Sub DrawFinishPhoto()
             'Draw a vertical line at the position of the horse´s head
             '(only for those which have crossed the finish line)
             If m_arr_varPhotofinish(i, 1) >= (objRace.METRES * 10) Then
-                With Range(Cells(5 + m_intTopRows, currentDrawColumn), _
-                    Cells(objRace.NUMBER_ENROLLED * 2 + 8 + m_intTopRows, currentDrawColumn)) _
+                With Range(Cells(5 + objBasicData.TOP_ROWS, currentDrawColumn), _
+                    Cells(objRace.NUMBER_ENROLLED * 2 + 8 + objBasicData.TOP_ROWS, currentDrawColumn)) _
                         .Borders(xlEdgeRight)
                             .LineStyle = xlContinuous
                             .ColorIndex = 0
@@ -3499,7 +3527,7 @@ Private Sub DrawFinishPhoto()
         'Write the horse names in the photo (if selected in the race options)
         If objOption.NAMES_PHOTO = True And g_arr_varHorses(i, 0) <> "CANCELLED" Then
             With Cells(g_arr_varHorses(i, 3), _
-                    objRace.METRES + m_intLeftColumns + 16 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR))
+                    objRace.METRES + objBasicData.LEFT_COLS + 16 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR))
                 .Font.name = "Arial"
                 .Font.size = m_intFontSize
                 .HorizontalAlignment = xlLeft
@@ -3509,7 +3537,8 @@ Private Sub DrawFinishPhoto()
             End With
         End If
     Next i
-
+    
+    If objOption.AUTOFIT Then Call AutoZoom("FinishPhoto")
     Application.ScreenUpdating = True 'Activate screen updating
         
     Exit Sub
@@ -3536,7 +3565,7 @@ Private Sub RaceFinished()
             Or objOption.MOMENTUM Or objOption.TACTICS_REVEAL_TAC Or objOption.TACTICS_REVEAL_CURR _
             Or (objOption.FOCUSED_RUN <> enumCamera.standard And objOption.HIGHLIGHT_FOC) Or (objOption.RACE_INFO And objOption.RACE_INFO_WKS) Then Call basAuxiliary.Freeze(0, 0, False)
     'Scrollen zu Ergebnistafel
-        Call basAuxiliary.Scroll(objRace.METRES + m_intLeftColumns + 15 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR), m_intTopRows + (objRace.NUMBER_ENROLLED * 2 + 9))
+        Call basAuxiliary.Scroll(objRace.METRES + objBasicData.LEFT_COLS + 15 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR), objBasicData.TOP_ROWS + (objRace.NUMBER_ENROLLED * 2 + 9))
 
     Exit Sub
 ERRORHANDLING:
@@ -3549,12 +3578,13 @@ Private Sub DrawRankingList(afterRace As Boolean, Optional test As Boolean)
     On Error GoTo ERRORHANDLING 'In case an error occurs
 
     Call basAuxiliary.ActivateRaceSheet
+    Call basAuxiliary.Scroll(objRace.METRES + objBasicData.LEFT_COLS + 15 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR), objBasicData.TOP_ROWS + (objRace.NUMBER_ENROLLED * 2 + 9))
 
     'Scoreboard
-    With Range(Cells(objRace.NUMBER_ENROLLED * 2 + 20 + m_intTopRows, _
-            objRace.METRES + m_intLeftColumns + 16 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)), _
-            Cells(objRace.NUMBER_ENROLLED * 2 + 20 + objRace.NUMBER_STARTING + 1 + m_intTopRows, _
-            objRace.METRES + m_intLeftColumns + 175 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)))
+    With Range(Cells(objRace.NUMBER_ENROLLED * 2 + 20 + objBasicData.TOP_ROWS, _
+            objRace.METRES + objBasicData.LEFT_COLS + 16 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)), _
+            Cells(objRace.NUMBER_ENROLLED * 2 + 20 + objRace.NUMBER_STARTING + 1 + objBasicData.TOP_ROWS, _
+            objRace.METRES + objBasicData.LEFT_COLS + 175 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)))
         .Clear 'clear all cell values and formattings
         .BorderAround color:=objOption.COL_TEXT, Weight:=xlMedium  'Border
         .Interior.color = objOption.COL_RANKINGS 'Background
@@ -3565,16 +3595,16 @@ Private Sub DrawRankingList(afterRace As Boolean, Optional test As Boolean)
         End With
        .NumberFormat = "@" 'Force text format
     End With
-    With Cells(objRace.NUMBER_ENROLLED * 2 + 20 + m_intTopRows, _
-                objRace.METRES + m_intLeftColumns + 16 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR))
+    With Cells(objRace.NUMBER_ENROLLED * 2 + 20 + objBasicData.TOP_ROWS, _
+                objRace.METRES + objBasicData.LEFT_COLS + 16 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR))
         .Font.size = 14 'Formattings for the headline
         .Font.Bold = True
         .IndentLevel = 1
     End With
     
     'Headline
-    Cells(objRace.NUMBER_ENROLLED * 2 + 20 + m_intTopRows, _
-            objRace.METRES + m_intLeftColumns + 16 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)) _
+    Cells(objRace.NUMBER_ENROLLED * 2 + 20 + objBasicData.TOP_ROWS, _
+            objRace.METRES + objBasicData.LEFT_COLS + 16 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)) _
             .Value = objRace.RACE_NAME & " " & objRace.RACE_YEAR & " - " & objRace.TRACK_LOCATION
             
     If Not g_skipDelay And objOption.RANKING_DELAY And afterRace Then _
@@ -3586,21 +3616,46 @@ Private Sub DrawRankingList(afterRace As Boolean, Optional test As Boolean)
     For i = UBound(m_arr_varResults) To 1 Step -1 'Loop through through the results bottom up
         If objOption.RANKING_COL Then 'Show colours if selected in the race options
             intPositionName = 12
-            Call PaintHorse(objRace.NUMBER_ENROLLED * 2 + 20 + i + m_intTopRows, _
-                objRace.METRES + m_intLeftColumns + 19 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR), _
+            Call PaintHorse(objRace.NUMBER_ENROLLED * 2 + 20 + i + objBasicData.TOP_ROWS, _
+                objRace.METRES + objBasicData.LEFT_COLS + 19 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR), _
                 m_arr_varResults(i, 4)) 'Paint the horse
-            Range(Cells(objRace.NUMBER_ENROLLED * 2 + 20 + i + m_intTopRows, _
-                objRace.METRES + m_intLeftColumns + 19 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)), _
-                Cells(objRace.NUMBER_ENROLLED * 2 + 20 + i + m_intTopRows, _
-                objRace.METRES + m_intLeftColumns + 26 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR))) _
+            Range(Cells(objRace.NUMBER_ENROLLED * 2 + 20 + i + objBasicData.TOP_ROWS, _
+                objRace.METRES + objBasicData.LEFT_COLS + 19 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)), _
+                Cells(objRace.NUMBER_ENROLLED * 2 + 20 + i + objBasicData.TOP_ROWS, _
+                objRace.METRES + objBasicData.LEFT_COLS + 26 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR))) _
                 .BorderAround ColorIndex:=0, Weight:=xlThin 'Draw a frame around the horse
         End If
-        Cells(objRace.NUMBER_ENROLLED * 2 + 20 + i + m_intTopRows, _
-            objRace.METRES + m_intLeftColumns + 22 + intPositionName + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)) _
+        Cells(objRace.NUMBER_ENROLLED * 2 + 20 + i + objBasicData.TOP_ROWS, _
+            objRace.METRES + objBasicData.LEFT_COLS + 22 + intPositionName + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)) _
             .Value = m_arr_varResults(i, 1) & "."  'Place
-        Cells(objRace.NUMBER_ENROLLED * 2 + 20 + i + m_intTopRows, _
-            objRace.METRES + m_intLeftColumns + 29 + intPositionName + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR)) _
+        Cells(objRace.NUMBER_ENROLLED * 2 + 20 + i + objBasicData.TOP_ROWS, _
+            objRace.METRES + objBasicData.LEFT_COLS + 29 + intPositionName + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)) _
             .Value = m_arr_varResults(i, 3) & " (#" & m_arr_varResults(i, 2) & ")" 'Horse name and number
+        
+    'Check if this is a Matjes Grand Prix (GMP) race
+    If GMP_mode = "QUALIFICATION" Then 'GMP qualification race
+        If objRace.NUMBER_STARTING > 8 Then
+            GMP_qualified = 3 'Three horses qualifiy for semifinals
+        Else
+            GMP_qualified = 2 'Two horses qualifiy for semifinals
+        End If
+        If m_arr_varResults(i, 1) <= GMP_qualified Then
+            Call GMP_ranking(intPositionName, True, " >>> " & GetText(g_arr_Text, "GMP01"))
+        Else
+            Call GMP_ranking(intPositionName, False)
+        End If
+    ElseIf GMP_mode = "SEMIFINAL" Then 'GMP semifinal race
+        GMP_qualified = 6 'Six horses qualifiy for the final race
+        If m_arr_varResults(i, 1) <= GMP_qualified Then
+            Call GMP_ranking(intPositionName, True, " >>> " & GetText(g_arr_Text, "GMP02"))
+        Else
+            Call GMP_ranking(intPositionName, False)
+        End If
+    Else 'No GMP race, GMP training or final
+        Call GMP_ranking(intPositionName, False)
+    End If
+        
+        
         If Not g_skipDelay And objOption.RANKING_DELAY And afterRace Then _
             Application.Wait (Now + TimeValue("0:00:01")) 'Delay
     Next i
@@ -3612,30 +3667,45 @@ Private Sub DrawRankingList(afterRace As Boolean, Optional test As Boolean)
 '    If TEST = False And m_blnDeadHeat = True Then ShowDeadHeat
 '    If TEST = False And m_blnDeadHeat Then Call ShowDeadHeat
 
+    If objOption.AUTOFIT Then Call AutoZoom("RankingList")
+    
     Exit Sub
 ERRORHANDLING:
     If g_errorLogging Then Call WriteErrorLog(VBA.Now, Err, Application.VBE.ActiveCodePane.CodeModule, "DrawRankingList()")
     Call basAuxiliary.CodeCrash
 End Sub
 
+'Extend the score board in case of a Matjes Grand Prix (GMP) race
+Sub GMP_ranking(intPositionName As Integer, q1 As Boolean, Optional q2 As String)
+            With Cells(objRace.NUMBER_ENROLLED * 2 + 20 + i + objBasicData.TOP_ROWS, _
+                objRace.METRES + objBasicData.LEFT_COLS + 29 + intPositionName + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR))
+                .Value = m_arr_varResults(i, 3) & " (#" & m_arr_varResults(i, 2) & ")" & q2
+                If q1 = True Then
+                .Font.color = RGB(0, 135, 60)
+                .Font.Bold = True
+                End If
+            End With
+End Sub
+
 'Speed factor for a single step (recalculated for each horse in every loop)
 Function SpeedLoop() As Double
     Randomize 'Initialize the random number generator
     'Get a random number within a defined range
-    SpeedLoop = Int((objSpeed.SPEED_LOOP_HIGH - objSpeed.SPEED_LOOP_LOW + 1) * rnd + objSpeed.SPEED_LOOP_LOW)
+    SpeedLoop = Int((objSpeed.SPEED_LOOP_HIGH - objSpeed.SPEED_LOOP_LOW + 1) * Rnd + objSpeed.SPEED_LOOP_LOW)
 End Function
 
 'Display the winner
-Private Sub DrawWinnerPhoto()
+Private Sub DrawWinnerPhoto(Optional zoom As Boolean)
     On Error GoTo ERRORHANDLING 'In case an error occurs
     
     Call basAuxiliary.ActivateRaceSheet
+    Application.ScreenUpdating = False 'Deactivate screen updating
     
     'Formattings for the name of the winner
-    With Range(Cells(objRace.NUMBER_ENROLLED * 2 + 20 + m_intTopRows, _
-            objRace.METRES + m_intLeftColumns + 177 + (2 * 10 * objOption.SPEED_FACTOR)), _
-            Cells(objRace.NUMBER_ENROLLED * 2 + 21 + m_intTopRows, _
-            objRace.METRES + m_intLeftColumns + 179 + m_intColumsAfterFinish + (2 * 10 * objOption.SPEED_FACTOR)))
+    With Range(Cells(objRace.NUMBER_ENROLLED * 2 + 20 + objBasicData.TOP_ROWS, _
+            objRace.METRES + objBasicData.LEFT_COLS + 177 + (2 * 10 * objOption.SPEED_FACTOR)), _
+            Cells(objRace.NUMBER_ENROLLED * 2 + 21 + objBasicData.TOP_ROWS, _
+            objRace.METRES + objBasicData.LEFT_COLS + 179 + objBasicData.AFTER_FIN_COLS + (2 * 10 * objOption.SPEED_FACTOR)))
         With .Font
             .color = objOption.COL_TEXT
             .size = 14
@@ -3643,35 +3713,45 @@ Private Sub DrawWinnerPhoto()
         End With
     End With
     
+    'Reset the number of winners
+    objStat.WINNERS = 0
+    
     For i = 1 To UBound(m_arr_varResults)
         If m_arr_varResults(i, 1) = 1 Then
 
             'Column width for the photo
-            Range(Columns(objRace.METRES + m_intLeftColumns + 177 + ((i - 1) * 21) + m_intColumsAfterFinish + (2 * 10 * objOption.SPEED_FACTOR)), _
-            Columns(objRace.METRES + m_intLeftColumns + 197 + ((i - 1) * 21) + m_intColumsAfterFinish + (2 * 10 * objOption.SPEED_FACTOR))) _
+            Range(Columns(objRace.METRES + objBasicData.LEFT_COLS + 177 + ((i - 1) * 21) + objBasicData.AFTER_FIN_COLS + (2 * 10 * objOption.SPEED_FACTOR)), _
+            Columns(objRace.METRES + objBasicData.LEFT_COLS + 197 + ((i - 1) * 21) + objBasicData.AFTER_FIN_COLS + (2 * 10 * objOption.SPEED_FACTOR))) _
             .ColumnWidth = 2
 
             'Draw the photo (20 columns x 18 rows)
             Call PaintPicture(g_wksPIC, g_wksRace, m_arr_varResults(i, 6), 20, 18, _
-                m_intTopRows + objRace.NUMBER_ENROLLED * 2 + 23, _
-                m_intLeftColumns + objRace.METRES + 177 + ((i - 1) * 21) + m_intColumsAfterFinish + (2 * 10 * objOption.SPEED_FACTOR))
+                objBasicData.TOP_ROWS + objRace.NUMBER_ENROLLED * 2 + 23, _
+                objBasicData.LEFT_COLS + objRace.METRES + 177 + ((i - 1) * 21) + objBasicData.AFTER_FIN_COLS + (2 * 10 * objOption.SPEED_FACTOR))
 
             'Draw a frame around the photo
-            Range(Cells(objRace.NUMBER_ENROLLED * 2 + 23 + m_intTopRows, _
-                objRace.METRES + m_intLeftColumns + 177 + ((i - 1) * 21) + m_intColumsAfterFinish + (2 * 10 * objOption.SPEED_FACTOR)), _
-                Cells(objRace.NUMBER_ENROLLED * 2 + 40 + m_intTopRows, _
-                objRace.METRES + m_intLeftColumns + 196 + ((i - 1) * 21) + m_intColumsAfterFinish + (2 * 10 * objOption.SPEED_FACTOR))) _
+            Range(Cells(objRace.NUMBER_ENROLLED * 2 + 23 + objBasicData.TOP_ROWS, _
+                objRace.METRES + objBasicData.LEFT_COLS + 177 + ((i - 1) * 21) + objBasicData.AFTER_FIN_COLS + (2 * 10 * objOption.SPEED_FACTOR)), _
+                Cells(objRace.NUMBER_ENROLLED * 2 + 40 + objBasicData.TOP_ROWS, _
+                objRace.METRES + objBasicData.LEFT_COLS + 196 + ((i - 1) * 21) + objBasicData.AFTER_FIN_COLS + (2 * 10 * objOption.SPEED_FACTOR))) _
                 .BorderAround color:=objOption.COL_TEXT, Weight:=xlMedium 'Draw a frame around the horse
+        
+            'Count the number of winners
+            objStat.WINNERS = objStat.WINNERS + 1
         
         End If
     Next i
     
-    Cells(objRace.NUMBER_ENROLLED * 2 + 20 + m_intTopRows, _
-        objRace.METRES + m_intLeftColumns + 177 + m_intColumsAfterFinish + (2 * 10 * objOption.SPEED_FACTOR)) _
+    Cells(objRace.NUMBER_ENROLLED * 2 + 20 + objBasicData.TOP_ROWS, _
+        objRace.METRES + objBasicData.LEFT_COLS + 177 + objBasicData.AFTER_FIN_COLS + (2 * 10 * objOption.SPEED_FACTOR)) _
         .Value = GetText(g_arr_Text, "RACE031") '"Winner of the race:"
-    Cells(objRace.NUMBER_ENROLLED * 2 + 21 + m_intTopRows, _
-        objRace.METRES + m_intLeftColumns + 179 + m_intColumsAfterFinish + (2 * 10 * objOption.SPEED_FACTOR)) _
+    Cells(objRace.NUMBER_ENROLLED * 2 + 21 + objBasicData.TOP_ROWS, _
+        objRace.METRES + objBasicData.LEFT_COLS + 179 + objBasicData.AFTER_FIN_COLS + (2 * 10 * objOption.SPEED_FACTOR)) _
         .Value = objStat.WINNER_NAME 'Name of the winner
+
+    If objOption.AUTOFIT And zoom Then Call AutoZoom("WinnerPhoto")
+    
+    Application.ScreenUpdating = True 'Activate screen updating
     
     'Voice output if selected in the race options
     If objOption.SPEECH Then Call SpeechOut(GetText(g_arr_Text, "RACE031"))
@@ -3824,7 +3904,7 @@ Private Sub AnalyseBettings()
             bt() = g_colBetSlips(i).BET 'Prediction of the ranking (place 1-4, dependent on the type of the bet)
             
             'Analyse the bet slips by comparing the prediction with the actual rank
-            Dim X As Integer, Y As Integer, z As Integer
+            Dim X As Integer, Y As Integer, Z As Integer
             Select Case ty
 
                 Case enumBetType.win 'Type of bet: Win
@@ -3853,57 +3933,57 @@ Private Sub AnalyseBettings()
                     Next
 
                 Case enumBetType.x2sur4
-                    z = 0
+                    Z = 0
                     For X = 1 To UBound(m_arr_varResults)
                         For Y = 1 To 2
                             If bt(Y) = m_arr_varResults(X, 2) _
                                 And m_arr_varResults(X, 1) <= 4 Then
-                                    z = z + 1
+                                    Z = Z + 1
                                     Exit For
                             End If
                         Next
                     Next
                     od = payout2sur4 'Assign the pay-out
-                    If z = 2 Then payout = True
+                    If Z = 2 Then payout = True
 
                 Case enumBetType.exacta
-                    z = 0
+                    Z = 0
                     For X = 1 To UBound(m_arr_varResults)
                         For Y = 1 To 2
                             If bt(Y) = m_arr_varResults(X, 2) _
                                 And m_arr_varResults(X, 1) <= Y Then
-                                    z = z + 1
+                                    Z = Z + 1
                                     Exit For
                             End If
                         Next
                     Next
-                    If z = 2 Then payout = True
+                    If Z = 2 Then payout = True
 
                 Case enumBetType.trifecta
-                    z = 0
+                    Z = 0
                     For X = 1 To UBound(m_arr_varResults)
                         For Y = 1 To 3
                             If bt(Y) = m_arr_varResults(X, 2) _
                                 And m_arr_varResults(X, 1) <= Y Then
-                                    z = z + 1
+                                    Z = Z + 1
                                     Exit For
                             End If
                         Next
                     Next
-                    If z = 3 Then payout = True
+                    If Z = 3 Then payout = True
                     
                 Case enumBetType.superfecta
-                    z = 0
+                    Z = 0
                     For X = 1 To UBound(m_arr_varResults)
                         For Y = 1 To 4
                             If bt(Y) = m_arr_varResults(X, 2) _
                                 And m_arr_varResults(X, 1) <= Y Then
-                                    z = z + 1
+                                    Z = Z + 1
                                     Exit For
                             End If
                         Next
                     Next
-                    If z = 4 Then payout = True
+                    If Z = 4 Then payout = True
 
             End Select
             
@@ -4084,6 +4164,16 @@ Private Function GetHorseName(num As Integer) As String
     Next
     GetHorseName = g_arr_varHorses(X, 1)
 End Function
+
+'AI mode: Delete all GaloppSim worksheets
+Private Sub AI_DeleteWorksheets()
+    On Error Resume Next
+        Application.DisplayAlerts = False 'Turn off application warnings
+        'Delete worksheets
+            g_wksRace.Delete
+        Application.DisplayAlerts = True 'Turn on application warnings
+    On Error GoTo 0
+End Sub
 
 'Provide information for the pop-up when starting a new race
 Private Sub ShowStartPopup()
@@ -4352,12 +4442,303 @@ Public Sub ShowReceipt(id As Integer)
     End With
 End Sub
 
+
+'CALLBACKS (Excel ribbon events)
+'-------------------------------
+
+'AI mode (Callback for Excel ribbon): customUI.onLoad
+Private Sub AI_GaloppSimAddinInitialize(ribbon As IRibbonUI)
+    Set g_RibbonGaloppSim = ribbon
+End Sub
+
+'AI mode (Callback for Excel ribbon): Labels
+Private Sub AI_GetLabel(control As IRibbonControl, ByRef returnedVal)
+    
+    'Display the start screen in AI edition when activating the GALOPPSIM menu tab the first time
+    If AI_started = False Then
+        AI_started = True
+        Call TitleScreen
+    End If
+    
+    Select Case control.id
+        Case "group01GALOPPSIM" 'Group "Settings"
+            returnedVal = GetText(g_arr_Text, "AI001")
+            Case "btn10GALOPPSIM" 'Button "Race options"
+                returnedVal = GetText(g_arr_Text, "BTN001")
+            Case "menu02GALOPPSIM" 'Menu "Excel options"
+                returnedVal = GetText(g_arr_Text, "BTN002")
+                Case "cb01aGALOPPSIM" 'Button "Excel mode"
+                    returnedVal = GetText(g_arr_Text, "EXCELOPT010")
+                Case "cb01bGALOPPSIM" 'Button "TV mode with Excel menu strip"
+                    returnedVal = GetText(g_arr_Text, "EXCELOPT011")
+                Case "cb01cGALOPPSIM" 'Button "TV mode (full-screen)"
+                    returnedVal = GetText(g_arr_Text, "EXCELOPT012")
+                
+        Case "group02GALOPPSIM" 'Group "Race"
+            returnedVal = GetText(g_arr_Text, "AI002")
+            Case "btn30GALOPPSIM" 'Button "Start race"
+                returnedVal = GetText(g_arr_Text, getCaptionStartBtn(objOption.BET_MODE))
+            Case "combo01InstalledRaces" 'ComboBox "Race selection"
+                returnedVal = GetText(g_arr_Text, "RACE003")
+            Case "btn31GALOPPSIM" 'Button "Photo of the finish"
+                returnedVal = GetText(g_arr_Text, "BTN004")
+            Case "btn32GALOPPSIM" 'Button "Ranking list"
+                returnedVal = GetText(g_arr_Text, "BTN005")
+            Case "btn33GALOPPSIM" 'Button "Winner"
+                returnedVal = GetText(g_arr_Text, "BTN006")
+            Case "btn34GALOPPSIM" 'Button "Betting analysis"
+                returnedVal = GetText(g_arr_Text, "BTN007")
+            
+        Case "menu01GALOPPSIM" 'Menu "Language"
+            returnedVal = GetText(g_arr_Text, "LANGUAGE001")
+            Case "btn01aGALOPPSIM" 'Button "Deutsch"
+                returnedVal = GetText(g_arr_Text, "LANGUAGE002")
+            Case "btn01bGALOPPSIM" 'Button "English"
+                returnedVal = GetText(g_arr_Text, "LANGUAGE003")
+'            Case "btn01cGALOPPSIM" 'Button "Schwiizerdütsch"
+'                returnedVal = GetText(g_arr_Text, "LANGUAGE004")
+'            Case "btn01dGALOPPSIM" 'Button "Russian"
+'                returnedVal = GetText(g_arr_Text, "LANGUAGE005")
+            Case "btn01eGALOPPSIM" 'Button "Bulgarian"
+                returnedVal = GetText(g_arr_Text, "LANGUAGE006")
+        Case "btn20GALOPPSIM" 'Button "Colour mode"
+            returnedVal = GetText(g_arr_Text, "BTN021")
+        Case "btn40GALOPPSIM" 'Button "Info"
+            returnedVal = GetText(g_arr_Text, "BTN009")
+        Case "btn50GALOPPSIM" 'Button "Warning"
+            returnedVal = GetText(g_arr_Text, "BTN010")
+        Case "btn60GALOPPSIM" 'Button "Movie"
+            returnedVal = GetText(g_arr_Text, "BTN011")
+        Case "btn05GALOPPSIM" 'Button "Title screen"
+            returnedVal = GetText(g_arr_Text, "BTN020")
+        Case "btn70GALOPPSIM" 'Button "Termination"
+            returnedVal = GetText(g_arr_Text, "BTN012")
+    End Select
+End Sub
+
+'AI mode (Callback for Excel ribbon): Tooltips (Screentips)
+Private Sub AI_GetScreentip(control As IRibbonControl, ByRef screentip)
+    Select Case control.id
+        Case "btn10GALOPPSIM" 'Button "Race options"
+            screentip = GetText(g_arr_Text, "BTN001")
+        Case "menu02GALOPPSIM" 'Menu "Excel options"
+            screentip = GetText(g_arr_Text, "BTN002")
+        Case "cb01aGALOPPSIM" 'Button "Excel mode"
+            screentip = GetText(g_arr_Text, "EXCELOPT010")
+        Case "cb01bGALOPPSIM" 'Button "TV mode with Excel menu strip"
+            screentip = GetText(g_arr_Text, "EXCELOPT011")
+        Case "cb01cGALOPPSIM" 'Button "TV mode (full-screen)"
+            screentip = GetText(g_arr_Text, "EXCELOPT012")
+        Case "btn30GALOPPSIM" 'Button "Start race"
+            screentip = GetText(g_arr_Text, getCaptionStartBtn(objOption.BET_MODE))
+        Case "combo01InstalledRaces" 'ComboBox "Race selection"
+            screentip = GetText(g_arr_Text, "TIP024")
+        Case "btn31GALOPPSIM" 'Button "Photo of the finish"
+            screentip = GetText(g_arr_Text, "BTN004")
+        Case "btn32GALOPPSIM" 'Button "Ranking list"
+            screentip = GetText(g_arr_Text, "BTN005")
+        Case "btn33GALOPPSIM" 'Button "Winner"
+            screentip = GetText(g_arr_Text, "BTN006")
+        Case "btn34GALOPPSIM" 'Button "Betting analysis"
+            screentip = GetText(g_arr_Text, "BTN007")
+        Case "menu01GALOPPSIM" 'Menu "Language"
+            screentip = GetText(g_arr_Text, "LANGUAGE001")
+        Case "btn20GALOPPSIM" 'Button "Colour mode"
+            screentip = GetText(g_arr_Text, "BTN021")
+        Case "btn40GALOPPSIM" 'Button "Info"
+            screentip = GetText(g_arr_Text, "TIP026")
+        Case "btn50GALOPPSIM" 'Button "Warning"
+            screentip = GetText(g_arr_Text, "BTN010")
+        Case "btn60GALOPPSIM" 'Button "Movie"
+            screentip = GetText(g_arr_Text, "BTN030")
+        Case "btn05GALOPPSIM" 'Button "Title screen"
+            screentip = GetText(g_arr_Text, "BTN020")
+        Case "btn70GALOPPSIM" 'Button "Termination"
+            screentip = GetText(g_arr_Text, "TIP039")
+    End Select
+End Sub
+
+'AI mode (Callback for Excel ribbon): Tooltips (Supertips)
+Private Sub AI_GetSupertip(control As IRibbonControl, ByRef supertip)
+    Select Case control.id
+        Case "btn10GALOPPSIM" 'Button "Race options"
+            supertip = GetText(g_arr_Text, "TIP037")
+        Case "menu02GALOPPSIM" 'Menu "Excel options"
+            supertip = GetText(g_arr_Text, "TIP045")
+        Case "cb01aGALOPPSIM" 'Button "Excel mode"
+            supertip = GetText(g_arr_Text, "TIP013")
+        Case "cb01bGALOPPSIM" 'Button "TV mode with Excel menu strip"
+            supertip = GetText(g_arr_Text, "TIP014")
+        Case "cb01cGALOPPSIM" 'Button "TV mode (full-screen)"
+            supertip = GetText(g_arr_Text, "TIP015")
+        Case "btn30GALOPPSIM" 'Button "Start race"
+            supertip = GetText(g_arr_Text, "TIP046")
+        Case "combo01InstalledRaces" 'ComboBox "Race selection"
+            supertip = GetText(g_arr_Text, "TIP047")
+        Case "btn31GALOPPSIM" 'Button "Photo of the finish"
+            supertip = GetText(g_arr_Text, "TIP041")
+        Case "btn32GALOPPSIM" 'Button "Ranking list"
+            supertip = GetText(g_arr_Text, "TIP042")
+        Case "btn33GALOPPSIM" 'Button "Winner"
+            supertip = GetText(g_arr_Text, "TIP043")
+        Case "btn34GALOPPSIM" 'Button "Betting analysis"
+            supertip = GetText(g_arr_Text, "TIP044")
+        Case "menu01GALOPPSIM" 'Menu "Language"
+            supertip = GetText(g_arr_Text, "TIP048")
+        Case "btn20GALOPPSIM" 'Button "Colour mode"
+            supertip = GetText(g_arr_Text, "TIP038")
+        Case "btn40GALOPPSIM" 'Button "Info"
+            supertip = GetText(g_arr_Text, "TIP027")
+        Case "btn50GALOPPSIM" 'Button "Warning"
+            supertip = GetText(g_arr_Text, "TIP049")
+        Case "btn60GALOPPSIM" 'Button "Movie"
+            supertip = GetText(g_arr_Text, "BTN031")
+        Case "btn05GALOPPSIM" 'Button "Title screen"
+            supertip = GetText(g_arr_Text, "TIP012")
+        Case "btn70GALOPPSIM" 'Button "Termination"
+            supertip = GetText(g_arr_Text, "TIP040")
+    End Select
+End Sub
+
+'AI mode (Callback for Excel ribbon): Status of buttons (enabled or disabled)
+Private Sub AI_IsButtonEnabled(control As IRibbonControl, ByRef returnedVal)
+    Select Case control.id
+        Case "btn31GALOPPSIM" 'Button "Photo of the finish"
+            returnedVal = objRace.STARTED
+        Case "btn32GALOPPSIM" 'Button "Ranking list"
+            returnedVal = objRace.STARTED
+        Case "btn33GALOPPSIM" 'Button "Photo of the winner"
+            returnedVal = objRace.STARTED
+        Case "btn34GALOPPSIM" 'Button "Betting analysis"
+            returnedVal = objRace.STARTED And objOption.BET_PLACED
+    End Select
+End Sub
+
+'AI mode (Callback for Excel ribbon): Get values of checkboxes in the Excel ribbon (getPressed)
+Public Sub AI_ExcelModeGet(control As IRibbonControl, ByRef standardwert)
+    Select Case control.id
+        Case "cb01aGALOPPSIM" 'Excel mode
+            standardwert = (objOption.EXCEL_MODE = "normal")
+        Case "cb01bGALOPPSIM" 'TV mode with Excel menu strip
+            standardwert = (objOption.EXCEL_MODE = "TVmenu")
+        Case "cb01cGALOPPSIM" 'TV mode (full-screen)
+            standardwert = (objOption.EXCEL_MODE = "TVfull")
+    End Select
+End Sub
+
+'AI mode (Callback for Excel ribbon): Set values of checkboxes in the Excel ribbon (onAction)
+Public Sub AI_ExcelModeSet(control As IRibbonControl, pressed As Boolean)
+
+    'Check whether algorithms are allowed
+    If objOption.STOP_ALG Then
+        If basAuxiliary.AllowAlgorithms = False Then
+            objOption.STOP_ALG = False
+        Else
+            Exit Sub
+        End If
+    End If
+    
+    Select Case control.id
+        Case "cb01aGALOPPSIM" 'Excel mode
+            objOption.EXCEL_MODE = "normal"
+            Call ResetExcelOptions
+        Case "cb01bGALOPPSIM" 'TV mode with Excel menu strip
+            objOption.EXCEL_MODE = "TVmenu"
+            Call ExcelOptionsTVmenu
+        Case "cb01cGALOPPSIM" 'TV mode (full-screen)
+            objOption.EXCEL_MODE = "TVfull"
+            Call ExcelOptionsTVmenu
+    End Select
+    
+    g_RibbonGaloppSim.Invalidate 'refresh the status of the checkboxes
+End Sub
+
+'AI mode (Callback for Excel ribbon): Click on button "Betting" "Race options"
+Private Sub AI_OptionsRace(control As IRibbonControl)
+
+    'Check whether algorithms are allowed
+    If objOption.STOP_ALG Then
+        If basAuxiliary.AllowAlgorithms = False Then
+            objOption.STOP_ALG = False
+        Else
+            Exit Sub
+        End If
+    End If
+    Call GetAnimalGrammar
+    frmOptionsRace.show (vbModal) 'display UserForm (modal)
+End Sub
+
+'AI mode (Callback for Excel ribbon): Click on button "Start the race"
+Private Sub AI_StartRace(control As IRibbonControl)
+
+    'Check whether algorithms are allowed
+    If objOption.STOP_ALG Then
+        If basAuxiliary.AllowAlgorithms = False Then
+            objOption.STOP_ALG = False
+        Else
+            Exit Sub
+        End If
+    End If
+    
+    'Leave the current race?
+    If objRace.STARTED Then
+        Dim strNextRace As String
+        With ThisWorkbook.Worksheets(objRace.SELECTED)
+            strNextRace = .Cells(basAuxiliary.GetRow(ThisWorkbook.Worksheets(objRace.SELECTED), "RACE NAME"), 2).Value & " " & _
+                .Cells(basAuxiliary.GetRow(ThisWorkbook.Worksheets(objRace.SELECTED), "YEAR"), 2).Value & " (" & _
+                .Cells(basAuxiliary.GetRow(ThisWorkbook.Worksheets(objRace.SELECTED), "DISTANCE METRES"), 2).Value & "m) - " & _
+                .Cells(basAuxiliary.GetRow(ThisWorkbook.Worksheets(objRace.SELECTED), "TRACK LOCATION"), 2).Value
+        End With
+
+        'Pop-up
+    Call ShowMessagePopup(g_c_tool, GetText(g_arr_Text, "RACE003") & ": " & strNextRace, _
+        enumButton.CancelOK, vbModal)
+            
+            'Evaluate the return value
+            If g_enumButton = enumButton.Cancel Then Exit Sub
+            
+            If g_strPlayMode = "AI" Then g_RibbonGaloppSim.Invalidate 'reset Excel ribbon
+            Call ShowNewRaceScreen("NEWRACE2")
+    End If
+
+    Call NewRace(False)
+End Sub
+
+'AI mode (Callback for Excel ribbon): Click on button "Ranking list"
+Private Sub AI_Results(control As IRibbonControl)
+
+    'Check whether algorithms are allowed
+    If objOption.STOP_ALG Then
+        If basAuxiliary.AllowAlgorithms = False Then
+            objOption.STOP_ALG = False
+        Else
+            Exit Sub
+        End If
+    End If
+    
+    Call ShowRankingList
+End Sub
+
+'AI mode (Callback for Excel ribbon): Click on button "Photo of the winner"
+Private Sub AI_Winner(control As IRibbonControl)
+
+    'Check whether algorithms are allowed
+    If objOption.STOP_ALG Then
+        If basAuxiliary.AllowAlgorithms = False Then
+            objOption.STOP_ALG = False
+        Else
+            Exit Sub
+        End If
+    End If
+    
+    Call ShowWinnerPhoto(False, True)
+End Sub
+
 'Show the photo of the winner
-Public Sub ShowWinnerPhoto(Optional test As Boolean)
+Public Sub ShowWinnerPhoto(Optional test As Boolean, Optional zoom As Boolean)
     If objRace.STARTED Then
         Call basAuxiliary.ActivateRaceSheet
-        Call DrawWinnerPhoto
-        Call basAuxiliary.Scroll(objRace.METRES + m_intLeftColumns + 16 + 160 + m_intColumsAfterFinish + (2 * 10 * objOption.SPEED_FACTOR), m_intTopRows + (objRace.NUMBER_ENROLLED * 2 + 9))
+        Call DrawWinnerPhoto(zoom)
         If g_strPlayMode = "RS" And Not test Then frmRS_navigation.show (vbModeless)
     End If
 End Sub
@@ -4367,10 +4748,25 @@ Public Sub ShowRankingList(Optional test As Boolean)
     If objRace.STARTED Then
         Call basAuxiliary.ActivateRaceSheet
         Call FormatPhotoAndRanking
-        Call basAuxiliary.Scroll(objRace.METRES + m_intLeftColumns + 15 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR), m_intTopRows + (objRace.NUMBER_ENROLLED * 2 + 9))
+        Call basAuxiliary.Scroll(objRace.METRES + objBasicData.LEFT_COLS + 15 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR), objBasicData.TOP_ROWS + (objRace.NUMBER_ENROLLED * 2 + 9))
         Call DrawRankingList(False, test)
         If g_strPlayMode = "RS" And Not test Then frmRS_navigation.show (vbModeless)
     End If
+End Sub
+
+'AI mode (Callback for Excel ribbon): Click on button "Photo of the finish"
+Private Sub AI_FinishPhoto(control As IRibbonControl)
+
+    'Check whether algorithms are allowed
+    If objOption.STOP_ALG Then
+        If basAuxiliary.AllowAlgorithms = False Then
+            objOption.STOP_ALG = False
+        Else
+            Exit Sub
+        End If
+    End If
+    
+    Call ShowFinishPhoto
 End Sub
 
 'Show the photo of the finish
@@ -4378,10 +4774,25 @@ Public Sub ShowFinishPhoto(Optional test As Boolean)
     If objRace.STARTED Then
         Call basAuxiliary.ActivateRaceSheet
         Call FormatPhotoAndRanking
-        Call basAuxiliary.Scroll(objRace.METRES + m_intLeftColumns + 15 + m_intColumsAfterFinish + (2 * objOption.SPEED_FACTOR), m_intTopRows + 1)
+        Call basAuxiliary.Scroll(objRace.METRES + objBasicData.LEFT_COLS + 15 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR), objBasicData.TOP_ROWS + 1)
         Call DrawFinishPhoto
         If g_strPlayMode = "RS" And Not test Then frmRS_navigation.show (vbModeless)
     End If
+End Sub
+
+'AI mode (Callback for Excel ribbon): Click on button "Betting analysis"
+Private Sub AI_Betting(control As IRibbonControl)
+
+    'Check whether algorithms are allowed
+    If objOption.STOP_ALG Then
+        If basAuxiliary.AllowAlgorithms = False Then
+            objOption.STOP_ALG = False
+        Else
+            Exit Sub
+        End If
+    End If
+    
+    Call ShowBets
 End Sub
 
 'Show a pop-up with the betting analysis
@@ -4389,6 +4800,60 @@ Public Sub ShowBets()
     If objRace.STARTED And objOption.BET_PLACED Then
         Call AnalyseBettings
     End If
+End Sub
+
+'AI mode (Callback for Excel ribbon): Click on button "Info section"
+Private Sub AI_Info(control As IRibbonControl)
+
+    'Check whether algorithms are allowed
+    If objOption.STOP_ALG Then
+        If basAuxiliary.AllowAlgorithms = False Then
+            objOption.STOP_ALG = False
+        Else
+            Exit Sub
+        End If
+    End If
+    
+    Call ShowInfo
+End Sub
+
+'AI mode: Adapt Excel settings according to the selected mode
+Public Sub AI_ExcelModeStart()
+    Select Case objOption.EXCEL_MODE
+        Case "normal"
+            Call ResetExcelOptions
+        Case "TVmenu"
+            Call ExcelOptionsTVmenu
+        Case "TVfull"
+            Call ExcelOptionsTVfull
+    End Select
+End Sub
+
+'AI mode (Callback for Excel ribbon): Click on button "Colour mode"
+Private Sub AI_ColourMode(control As IRibbonControl)
+
+    'Check whether algorithms are allowed
+    If objOption.STOP_ALG Then
+        If basAuxiliary.AllowAlgorithms = False Then
+            objOption.STOP_ALG = False
+        Else
+            Exit Sub
+        End If
+    End If
+    
+    Call ColourModeSelection
+End Sub
+
+'AI mode: Reset Excel settings
+Public Sub AI_ExcelModeEnd()
+    Select Case objOption.EXCEL_MODE
+        Case "normal"
+            
+        Case "TVmenu"
+            
+        Case "TVfull"
+            Call ExcelOptionsTVmenu
+    End Select
 End Sub
 
 'Provide content for the pop-up with the tool information
@@ -4692,11 +5157,41 @@ Private Sub LabelAlgo(lbl As Object, text As String, top As Integer, left As Int
     End With
 End Sub
 
+'AI mode (Callback for Excel ribbon): Click on button "Warning notice"
+Private Sub AI_Warning(control As IRibbonControl)
+
+    'Check whether algorithms are allowed
+    If objOption.STOP_ALG Then
+        If basAuxiliary.AllowAlgorithms = False Then
+            objOption.STOP_ALG = False
+        Else
+            Exit Sub
+        End If
+    End If
+    
+    Call ShowWarning
+End Sub
+
 'Show a pop-up with a warning message
 Private Sub ShowWarning()
     Dim strWarningMessage As String
     strWarningMessage = GetText(g_arr_Text, "WARN001") & vbNewLine & GetText(g_arr_Text, "WARN002")
     Call ShowInfoPopup(GetText(g_arr_Text, "USERFORM003"), strWarningMessage, True, vbModal)
+End Sub
+
+'AI mode (Callback for Excel ribbon): Click on button "Play movie"
+Private Sub AI_Movie2017(control As IRibbonControl)
+
+    'Check whether algorithms are allowed
+    If objOption.STOP_ALG Then
+        If basAuxiliary.AllowAlgorithms = False Then
+            objOption.STOP_ALG = False
+        Else
+            Exit Sub
+        End If
+    End If
+    
+    Call GaloppSimMovie2017
 End Sub
 
 'Play the GaloppSim Movie (2017)
@@ -4708,6 +5203,30 @@ Private Sub GaloppSimMovie2017()
     Call basMovie2017.PlayMovie2017
 End Sub
 
+'AI mode (Callback for Excel ribbon): Click on LEGO button
+Private Sub AI_LEGO(control As IRibbonControl)
+
+    'Check whether algorithms are allowed
+    If objOption.STOP_ALG Then
+        If basAuxiliary.AllowAlgorithms = False Then
+            objOption.STOP_ALG = False
+        Else
+            Exit Sub
+        End If
+    End If
+    
+    Call LEGOintegration
+End Sub
+
+'LEGO integration
+Private Sub LEGOintegration()
+    'Close pop-ups if visible
+    If frmBettingAnalysis.Visible Then Unload frmBettingAnalysis 'Betting analysis
+    If frmRS_navigation.Visible Then Unload frmRS_navigation 'Navigation panel (RS edition only)
+    '...........
+    MsgBox "lego............."
+End Sub
+
 'Colour mode selection
 Private Sub ColourModeSelection()
     'Close pop-ups if visible
@@ -4715,6 +5234,164 @@ Private Sub ColourModeSelection()
     If frmRS_navigation.Visible Then Unload frmRS_navigation 'Navigation panel (RS edition only)
 
     frmColourMode.show
+End Sub
+
+'AI mode (Callback for Excel ribbon): Click on button "Start screen"
+Private Sub AI_Title(control As IRibbonControl)
+
+    'Check whether algorithms are allowed
+    If objOption.STOP_ALG Then
+        If basAuxiliary.AllowAlgorithms = False Then
+            objOption.STOP_ALG = False
+        Else
+            Exit Sub
+        End If
+    End If
+    
+    Call TitleScreen
+        
+End Sub
+
+'Paint the GaloppSim title screen
+'(currently used in AI edition only)
+Public Sub TitleScreen()
+
+    'Leave the current venue?
+    If objRace.STARTED Then
+        Call ShowMessagePopup(g_c_tool, GetText(g_arr_Text, "WARN003"), _
+            enumButton.CancelOK, vbModal)
+        'Evaluate the return value
+        If g_enumButton = enumButton.Cancel Then Exit Sub
+    End If
+
+    Unload frmBettingAnalysis
+    If objRace.STARTED Then objRace.STARTED = False
+    
+    'Reset the Excel ribbon
+    g_RibbonGaloppSim.Invalidate
+
+    Call CreateRaceSheet
+    Call AI_ExcelModeStart
+    Call AI_ExcelModeEnd
+    
+    With g_wksRace.Range(Cells(1, 1), Cells(40, 100))
+        .ColumnWidth = ZoomLevelPictures()(0)
+        .RowHeight = ZoomLevelPictures()(1)
+    End With
+    
+    Call PaintPicture(g_wksPIC, g_wksRace, "AI_TITLE2", 100, 40, 1, 1)
+    
+    'Place the cursor far away (in the upper right corner of the screen)
+    Call CursorAway
+
+    objRace.STARTED = False
+        
+End Sub
+
+'AI mode (Callback for Excel ribbon): Click on button "Termination"
+Private Sub AI_Close(control As IRibbonControl)
+
+    'Check whether algorithms are allowed
+    If objOption.STOP_ALG Then
+        If basAuxiliary.AllowAlgorithms = False Then
+            objOption.STOP_ALG = False
+        Else
+            Exit Sub
+        End If
+    End If
+    
+    If objRace.STARTED Then objRace.STARTED = False
+    
+    'Blatt löschen
+    Call AI_DeleteWorksheets
+    Unload frmBettingAnalysis
+    
+    'Reset Excel ribbon
+    g_RibbonGaloppSim.Invalidate
+
+    'Reset Excel options
+    Call ResetExcelOptions
+    Application.ScreenUpdating = True
+End Sub
+
+'AI mode (Callback for Excel ribbon): Click on language button "DE"
+Private Sub AI_LanguageDE(control As IRibbonControl)
+
+    'Check whether algorithms are allowed
+    If objOption.STOP_ALG Then
+        If basAuxiliary.AllowAlgorithms = False Then
+            objOption.STOP_ALG = False
+        Else
+            Exit Sub
+        End If
+    End If
+    
+    objOption.language = "DE"
+    Call ChangeLanguage
+End Sub
+
+'AI mode (Callback for Excel ribbon): Click on language button "EN"
+Private Sub AI_LanguageEN(control As IRibbonControl)
+
+    'Check whether algorithms are allowed
+    If objOption.STOP_ALG Then
+        If basAuxiliary.AllowAlgorithms = False Then
+            objOption.STOP_ALG = False
+        Else
+            Exit Sub
+        End If
+    End If
+    
+    objOption.language = "EN"
+    Call ChangeLanguage
+End Sub
+
+''AI mode (Callback for Excel ribbon): Click on language button "RU"
+'Private Sub AI_LanguageRU(control As IRibbonControl)
+'
+'    'Check whether algorithms are allowed
+'    If objOption.STOP_ALG Then
+'        If basAuxiliary.AllowAlgorithms = False Then
+'            objOption.STOP_ALG = False
+'        Else
+'            Exit Sub
+'        End If
+'    End If
+'
+'    objOption.LANGUAGE = "RU"
+'    Call ChangeLanguage
+'End Sub
+'
+''AI mode (Callback for Excel ribbon): Click on language button "CH"
+'Private Sub AI_LanguageCH(control As IRibbonControl)
+'
+'    'Check whether algorithms are allowed
+'    If objOption.STOP_ALG Then
+'        If basAuxiliary.AllowAlgorithms = False Then
+'            objOption.STOP_ALG = False
+'        Else
+'            Exit Sub
+'        End If
+'    End If
+'
+'    objOption.LANGUAGE = "CH"
+'    Call ChangeLanguage
+'End Sub
+'
+'AI mode (Callback for Excel ribbon): Click on language button "BG"
+Private Sub AI_LanguageBG(control As IRibbonControl)
+
+    'Check whether algorithms are allowed
+    If objOption.STOP_ALG Then
+        If basAuxiliary.AllowAlgorithms = False Then
+            objOption.STOP_ALG = False
+        Else
+            Exit Sub
+        End If
+    End If
+    
+    objOption.language = "BG"
+    Call ChangeLanguage
 End Sub
 
 'Change of the user interface language
@@ -4775,6 +5452,57 @@ Private Sub RS_RefreshButtonTexts(name As String)
     End Select
 End Sub
 
+'AI mode (Callback for Excel ribbon): Count the number of installed races
+Private Sub AI_InstalledRaces_getItemCount(control As IRibbonControl, ByRef returnedVal)
+    
+    Dim wksR As Worksheet
+    Dim cnt As Long
+    
+    Set g_colRacesInstalled = Nothing
+    Set g_colRacesInstalled = New Collection
+    
+    For Each wksR In ThisWorkbook.Worksheets
+        If left(wksR.name, 5) = "race_" Then cnt = cnt + 1
+    Next wksR
+    
+    returnedVal = cnt
+    
+End Sub
+
+'AI mode (Callback for Excel ribbon): Get the names of all installed races
+Private Sub AI_InstalledRaces_getItemLabel(control As IRibbonControl, index As Integer, ByRef returnedVal)
+
+    Dim wksCheck As Worksheet
+    Dim cnt As Long
+    
+    For Each wksCheck In ThisWorkbook.Worksheets
+        If left(wksCheck.name, 5) = "race_" Then cnt = cnt + 1
+        If cnt = index + 1 Then
+            With wksCheck
+                g_colRacesInstalled.Add .name
+                returnedVal = .Cells(basAuxiliary.GetRow(wksCheck, "RACE NAME"), 2).Value & " " & _
+                                .Cells(basAuxiliary.GetRow(wksCheck, "YEAR"), 2).Value & " (" & _
+                                .Cells(basAuxiliary.GetRow(wksCheck, "DISTANCE METRES"), 2).Value & "m) - " & .Cells(basAuxiliary.GetRow(wksCheck, "TRACK LOCATION"), 2).Value
+                End With
+            Exit For
+        End If
+    Next wksCheck
+
+End Sub
+
+'AI mode (Callback for Excel ribbon): Set default race
+Private Sub AI_InstalledRaces_GetSelectedItemID(control As IRibbonControl, ByRef itemID As Variant)
+    If objRace.SELECTED = "" Then
+        objRace.SELECTED = g_colRacesInstalled(1) 'take the first race of the collection
+    End If
+    itemID = objRace.SELECTED
+End Sub
+
+'AI mode (Callback for Excel ribbon): Set selected race
+Private Sub AI_InstalledRaces_Click(control As IRibbonControl, id As String, index As Integer)
+    objRace.SELECTED = g_colRacesInstalled(index + 1)
+End Sub
+
 'This procedure is executed when the workbook is being closed.
 'The Auto_Close procedure can be used alternatively to the Workbook_BeforeClose
 'event in "ThisWorkbook" ("DieseArbeitsmappe") which is NOT used for this project.
@@ -4785,6 +5513,7 @@ Public Sub Auto_Close()
     Call basMainCode.ResetExcelOptions
     Application.ScreenUpdating = True
     If g_strPlayMode = "RS" Then
+        Application.ReferenceStyle = objBasicData.XL_STYLE_NOTATION 'Restore the setting
         ThisWorkbook.Saved = True 'Do not save the workbook!
         'https://support.microsoft.com/en-us/help/213428/how-to-suppress-save-changes-prompt-when-you-close-a-workbook-in-excel
     End If

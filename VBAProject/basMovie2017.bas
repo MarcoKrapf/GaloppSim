@@ -18,7 +18,6 @@ Option Private Module
         colFenceSCM As Long, colSpeakerSCM As Long, colRandomSCM As Long
         
 Public Sub PlayMovie2017()
-
     'Assign text colour
     Select Case g_strColourMode
         Case "DARKMODE"
@@ -27,10 +26,10 @@ Public Sub PlayMovie2017()
             colText = 0
     End Select
     'Assign colours for the Smarties Colour Mode (SCM)
-    colHeavenSCM = Int((16777215 - 0 + 1) * rnd + 0)
-    colGrassSCM = Int((16777215 - 0 + 1) * rnd + 0)
-    colFenceSCM = Int((16777215 - 0 + 1) * rnd + 0)
-    colSpeakerSCM = Int((16777215 - 0 + 1) * rnd + 0)
+    colHeavenSCM = Int((16777215 - 0 + 1) * Rnd + 0)
+    colGrassSCM = Int((16777215 - 0 + 1) * Rnd + 0)
+    colFenceSCM = Int((16777215 - 0 + 1) * Rnd + 0)
+    colSpeakerSCM = Int((16777215 - 0 + 1) * Rnd + 0)
     
     On Error GoTo ERRORHANDLING 'In case an error occurs
     
@@ -61,17 +60,12 @@ Public Sub PlayMovie2017()
             .Activate
         End With
         
-    'Show a pop-up if the window size is too small for the movie
-        If (Application.ActiveWindow.Height < 780 Or Application.ActiveWindow.width < 1080) _
-            And objOption.EXCEL_MODE <> "TVfull" Then
-            
-            Call ShowMessagePopup(GetText(g_arr_Text, "USERFORM004"), _
-                GetText(g_arr_Text, "MOVIE001") & vbNewLine _
-                    & GetText(g_arr_Text, "MOVIE002"), enumButton.YesNo, vbModal)
-                
-            'Evaluate the return value of the button
-            If g_enumButton = enumButton.yes Then Call ExcelOptionsTVfull 'Activate the full screen mode
-        End If
+        If g_strPlayMode = "AI" Then Call AI_ExcelModeStart
+        
+    'Apply auto zoom if necessary
+    Application.ScreenUpdating = False 'Deactivate screen updating
+    If objOption.AUTOFIT Then Call AutoZoom("Movie")
+    Application.ScreenUpdating = True 'Activate screen updating
     
     'Prepare the speaker
     With g_wksMovie
@@ -225,6 +219,9 @@ Public Sub PlayMovie2017()
     On Error Resume Next
     'If the full screen mode was activated: Reset the Excel options
         If g_enumButton = enumButton.yes Then Call ResetExcelOptions
+        
+    'Reset AI Excel mode
+        If g_strPlayMode = "AI" Then Call AI_ExcelModeEnd
     
     'Jump to the GALOPPSIM Worksheet
         If g_strPlayMode = "RS" Then g_wksRace.Activate
@@ -241,10 +238,10 @@ Private Sub DrawPicture(col As Integer)
     Dim row As Integer
 
     'Variables used for the Psychadelic Art Mode (LSD Mode)
-    colHeavenLSD = PopArtColour(Int((16777215 - 0 + 1) * rnd + 0))
-    colGrassLSD = PopArtColour(Int((16777215 - 0 + 1) * rnd + 0))
-    colFenceLSD = PopArtColour(Int((16777215 - 0 + 1) * rnd + 0))
-    colSpeakerLSD = PopArtColour(Int((16777215 - 0 + 1) * rnd + 0))
+    colHeavenLSD = PopArtColour(Int((16777215 - 0 + 1) * Rnd + 0))
+    colGrassLSD = PopArtColour(Int((16777215 - 0 + 1) * Rnd + 0))
+    colFenceLSD = PopArtColour(Int((16777215 - 0 + 1) * Rnd + 0))
+    colSpeakerLSD = PopArtColour(Int((16777215 - 0 + 1) * Rnd + 0))
 
     row = 2 'Initial row for reading the colour data for the picture
     
@@ -280,7 +277,7 @@ Private Sub DrawPicture(col As Integer)
                                 .Interior.color = colSpeakerLSD
                             Case Else
                                 Do
-                                    colRandomLSD = PopArtColour(Int((16777215 - 0 + 1) * rnd + 0))
+                                    colRandomLSD = PopArtColour(Int((16777215 - 0 + 1) * Rnd + 0))
                                 Loop Until colRandomLSD <> colHeavenLSD And colRandomLSD <> colGrassLSD _
                                         And colRandomLSD <> colFenceLSD
                                 .Interior.color = colRandomLSD
@@ -301,7 +298,7 @@ Private Sub DrawPicture(col As Integer)
                                 .Interior.color = colSpeakerSCM
                             Case Else
                                 Do
-                                    colRandomSCM = Int((16777215 - 0 + 1) * rnd + 0)
+                                    colRandomSCM = Int((16777215 - 0 + 1) * Rnd + 0)
                                 Loop Until colRandomSCM <> colHeavenSCM And colRandomSCM <> colGrassSCM _
                                         And colRandomSCM <> colFenceSCM
                                 .Interior.color = colRandomSCM

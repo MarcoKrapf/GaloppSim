@@ -18,6 +18,7 @@ Private intLeaderNr As Integer 'Horse number of the current leader
 Private strLeaderName As String 'Horse name of the current leader
 Private lngLeaderPos As Long 'Position of the current leader
 Private strWinnerName As String 'Name(s) of the horse(s) at 1st place
+Private intWinners As Integer 'Number of winners (more than one in case of a dead heat)
 
 'PROPERTIES
 '----------
@@ -51,4 +52,12 @@ End Property
 
 Public Property Let WINNER_NAME(ByVal strX As String)
     strWinnerName = strX
+End Property
+
+Public Property Get WINNERS() As Integer
+    WINNERS = intWinners
+End Property
+
+Public Property Let WINNERS(ByVal intX As Integer)
+    intWinners = intX
 End Property

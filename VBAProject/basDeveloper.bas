@@ -55,16 +55,16 @@ Sub RandomVerification()
         upperBound As Long, lowerBound As Long, _
         current As Long, min As Long, max As Long
     'Modify the values if needed
-    loops = 10 'Number of random values to be generated
-    upperBound = 16777215 'Maximum value
-    lowerBound = 0 'Minimum value
+    loops = 10000 '10 'Number of random values to be generated
+    upperBound = 142 '16777215 'Maximum value
+    lowerBound = 2 '0 'Minimum value
     'Set the start values
     max = lowerBound
     min = upperBound
     'Generate random integer numbers
     For loopNr = 1 To loops
         Randomize 'Initialize the random-number generator (create a new seed value)
-        current = Int((upperBound - lowerBound + 1) * rnd + lowerBound)
+        current = Int((upperBound - lowerBound + 1) * Rnd + lowerBound)
         If current < min Then min = current
         If current > max Then max = current
     Next

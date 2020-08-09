@@ -16,7 +16,6 @@ Option Explicit
 Private strLanguage As String 'GUI language
 Private blnStopAlgorithms As Boolean 'If true: Algorithms at work!
 Private strExcelMode As String 'AI edition: Excel options - Excel mode, TV mode with menu strip or TV mode full-screen
-Private byteTrackZoom As Byte 'Track zoom level (1 = small, 2 = medium, 3 = large)
 Private blnIncidentRefuse As Boolean 'If true: Horses can refuse to run
 Private intIncidentRefusalRate As Integer 'Start refusal rate
 Private blnTactics As Boolean 'Racing tactics (true or false)
@@ -68,6 +67,8 @@ Private lngRaceDataFontColour As Long 'Font colour of the general text
 Private lngRaceScoreboardColour As Long 'Background colour of the ranking list
 Private int24hDaylight As Integer 'Daylight factor used for 24h colour mode
 Private lng24hDaylightCol As Long 'Daylight colour used for 24h colour mode
+Private blnAutoFit As Boolean 'Auto-fit of the content according to the windows size
+
 
 'PROPERTIES
 '----------
@@ -93,14 +94,6 @@ End Property
 
 Public Property Let EXCEL_MODE(ByVal strX As String)
     strExcelMode = strX
-End Property
-
-Public Property Get ZOOM_LEVEL() As Byte
-    ZOOM_LEVEL = byteTrackZoom
-End Property
-
-Public Property Let ZOOM_LEVEL(ByVal byteX As Byte)
-    byteTrackZoom = byteX
 End Property
 
 Public Property Get REFUSE_RUN() As Boolean
@@ -524,4 +517,12 @@ End Property
 
 Public Property Get DAYLIGHT_COL() As Long
     DAYLIGHT_COL = lng24hDaylightCol
+End Property
+
+Public Property Get AUTOFIT() As Boolean
+    AUTOFIT = blnAutoFit
+End Property
+
+Public Property Let AUTOFIT(ByVal blnX As Boolean)
+    blnAutoFit = blnX
 End Property

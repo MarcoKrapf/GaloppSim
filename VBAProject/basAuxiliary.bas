@@ -41,6 +41,52 @@ Public Sub Freeze(col As Integer, row As Integer, direction As Boolean)
     End With
 End Sub
 
+'Apply either auto fit or a selected zoom level
+Public Sub AutoZoom(usecase As String, Optional percentage As Integer)
+
+    Application.ScreenUpdating = False 'Deactivate screen updating
+    ActiveWindow.zoom = 100 'Reset in case the zoom is already too small
+    
+    Select Case usecase
+        Case "FIX" 'Zoom to the desired percentage value
+            ActiveWindow.zoom = percentage
+        Case "Race" 'Auto fit: Reduce the zoom level until the advertisements below the race track fit in the screen
+            Do While ActiveWindow.VisibleRange.rows.count < rows(objRace.NUMBER_ENROLLED * 2 + 19 + objBasicData.TOP_ROWS).row
+                If ActiveWindow.zoom > 10 Then ActiveWindow.zoom = ActiveWindow.zoom - 1
+            Loop
+        Case "FinishPhoto" 'Auto fit: Reduce the zoom level until the entire finish photo is displayed
+            Do While ActiveWindow.VisibleRange.rows(ActiveWindow.VisibleRange.rows.count).row <= (objRace.NUMBER_ENROLLED * 2 + 8 + objBasicData.TOP_ROWS) _
+                Or ActiveWindow.VisibleRange.Columns(ActiveWindow.VisibleRange.Columns.count).Column <= (objRace.METRES + objBasicData.LEFT_COLS + 175 + objBasicData.AFTER_FIN_COLS + (2 * 10 * objOption.SPEED_FACTOR))
+                
+                If ActiveWindow.zoom > 10 Then ActiveWindow.zoom = ActiveWindow.zoom - 1
+            Loop
+        Case "RankingList" 'Auto fit: Reduce the zoom level until the entire ranking list is displayed
+            Do While ActiveWindow.VisibleRange.rows(ActiveWindow.VisibleRange.rows.count).row <= objRace.NUMBER_ENROLLED * 2 + 20 + objRace.NUMBER_STARTING + 1 + objBasicData.TOP_ROWS _
+                Or ActiveWindow.VisibleRange.Columns(ActiveWindow.VisibleRange.Columns.count).Column <= objRace.METRES + objBasicData.LEFT_COLS + 175 + objBasicData.AFTER_FIN_COLS + (2 * objOption.SPEED_FACTOR)
+                
+                If ActiveWindow.zoom > 10 Then ActiveWindow.zoom = ActiveWindow.zoom - 1
+            Loop
+        Case "WinnerPhoto" 'Auto fit: Reduce the zoom level until all winner photos are displayed
+            Do While ActiveWindow.VisibleRange.rows(ActiveWindow.VisibleRange.rows.count).row <= objRace.NUMBER_ENROLLED * 2 + 40 + objBasicData.TOP_ROWS _
+                Or ActiveWindow.VisibleRange.Columns(ActiveWindow.VisibleRange.Columns.count).Column <= objRace.METRES + objBasicData.LEFT_COLS + 196 + (objStat.WINNERS * 21) + objBasicData.AFTER_FIN_COLS + (2 * 10 * objOption.SPEED_FACTOR)
+
+                    If ActiveWindow.zoom > 10 Then ActiveWindow.zoom = ActiveWindow.zoom - 1
+                    Call Scroll(objRace.METRES + objBasicData.LEFT_COLS + 16 + 160 + objBasicData.AFTER_FIN_COLS + (2 * 10 * objOption.SPEED_FACTOR), objBasicData.TOP_ROWS + (objRace.NUMBER_ENROLLED * 2 + 9))
+            Loop
+        Case "Movie" 'Auto fit: Reduce the zoom level until the complete movie is displayed
+            Do While ActiveWindow.VisibleRange.rows.count < 40 Or ActiveWindow.VisibleRange.Columns.count < 100
+                If ActiveWindow.zoom > 10 Then ActiveWindow.zoom = ActiveWindow.zoom - 1
+            Loop
+        Case Else 'If none of the optional argumets is submitted
+            MsgBox "No zoom performed." & vbNewLine _
+                    & "Check the arguments for calling this function."
+    End Select
+    
+    Application.ScreenUpdating = True 'Activate screen updating
+
+End Sub
+
+
 'Scrolling
 Public Sub Scroll(col As Integer, row As Integer)
     On Error Resume Next
@@ -118,13 +164,13 @@ Public Sub PaintPicture(wksSource As Worksheet, wksTarget As Worksheet, ByVal pi
     
     'Variables used for the ecstasy colour mode
     Dim colHeavenPop As Long, colGrassPop As Long, colRandomPop As Long
-    colHeavenPop = PopArtColour(Int((16777215 - 0 + 1) * rnd + 0))
-    colGrassPop = PopArtColour(Int((16777215 - 0 + 1) * rnd + 0))
+    colHeavenPop = PopArtColour(Int((16777215 - 0 + 1) * Rnd + 0))
+    colGrassPop = PopArtColour(Int((16777215 - 0 + 1) * Rnd + 0))
     
     'Variables used for the Random colour mode
     Dim colHeaven As Long, colGrass As Long, colRandom As Long
-    colHeaven = Int((16777215 - 0 + 1) * rnd + 0)
-    colGrass = Int((16777215 - 0 + 1) * rnd + 0)
+    colHeaven = Int((16777215 - 0 + 1) * Rnd + 0)
+    colGrass = Int((16777215 - 0 + 1) * Rnd + 0)
             
     Application.ScreenUpdating = False 'Deactivate screen updating
         
@@ -154,7 +200,7 @@ Public Sub PaintPicture(wksSource As Worksheet, wksTarget As Worksheet, ByVal pi
                                         .Interior.color = colGrassPop
                                     Case Else
                                         Do
-                                            colRandomPop = PopArtColour(Int((16777215 - 0 + 1) * rnd + 0))
+                                            colRandomPop = PopArtColour(Int((16777215 - 0 + 1) * Rnd + 0))
                                         Loop Until colRandomPop <> colHeavenPop And colRandomPop <> colGrassPop
                                         .Interior.color = colRandomPop
                                 End Select
@@ -170,7 +216,7 @@ Public Sub PaintPicture(wksSource As Worksheet, wksTarget As Worksheet, ByVal pi
                                         .Interior.color = colGrass
                                     Case Else
                                         Do
-                                            colRandom = Int((16777215 - 0 + 1) * rnd + 0)
+                                            colRandom = Int((16777215 - 0 + 1) * Rnd + 0)
                                         Loop Until colRandom <> colHeaven And colRandom <> colGrass
                                         .Interior.color = colRandom
                                 End Select
@@ -260,7 +306,7 @@ Public Sub RaceInfoWorksheet(colBack As Long, colFore As Long, topRows, show As 
     'Race distance (metres run)
     With g_wksRace.Cells(3 + topRows, 11)
         .Font.name = "Arial Black"
-        .Font.size = objOption.ZOOM_LEVEL + 5
+        .Font.size = 8
         .IndentLevel = 1 'Text indented
         .HorizontalAlignment = xlRight
         .VerticalAlignment = xlCenter

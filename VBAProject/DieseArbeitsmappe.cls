@@ -26,6 +26,8 @@ Private Sub Workbook_Open()
         g_errorLogPath = Environ("UserProfile") '& "\Desktop" 'Path for the error log file
         g_errorLogging = False 'Error logging on(true)/off(false)
         g_payoutLogging = False 'Pay-out logging for bets on/off
+        g_defaultMLpath = Environ("UserProfile") 'Default path for Machine Learning export
+        g_MLdataFileName = "GALOPPSIM_ML_DATA" 'File name for Machine Learning export
     'If error logging is turned on: Activate a(ny) VBComponent to have a pane object.
     'This is needed to get the CodeModule name in the error handlers.
         If g_errorLogging = True Then
@@ -63,6 +65,7 @@ Private Sub Workbook_Open()
 '        Set g_wksTEC = ThisWorkbook.Worksheets("TEC") 'Attenton: The external name (Worksheet name) could be changed by the user
 
     'Create objects of Class Modules
+        Set objBasicData = New clsBasicData 'Object for the basic data
         Set objRace = New clsRace 'Object for the race data
         Set objOption = New clsOptions 'Object for the race and excel options
         Set objSpeed = New clsSpeed 'Object for speed data
@@ -71,7 +74,6 @@ Private Sub Workbook_Open()
     'Set the standard settings for the race options
         objOption.STOP_ALG = False
         objOption.EXCEL_MODE = "normal"
-        objOption.ZOOM_LEVEL = 3
         objOption.TACTICS = True
         objOption.TACTICS_REVEAL_TAC = False
         objOption.TACTICS_REVEAL_CURR = False
@@ -112,16 +114,17 @@ Private Sub Workbook_Open()
         objOption.SPACE_ALIENS = enumAliens.unfriendly
         objOption.SPACE_KIDNAPPINGRATE = 2
         objOption.TRIBUNES = True
-        objOption.SPECTATORS = 0 'No spectators allowed during the Corona crisis
+        objOption.SPECTATORS = 60
         objOption.PARTICULATES_SLIDER = 3
         objOption.COL_BACK = xlNone
         objOption.COL_TEXT = vbBlack
         objOption.COL_RANKINGS = vbWhite
         objOption.DAYLIGHT = 0 'High noon (12:00)
+        objOption.AUTOFIT = True
         
     'Set the default path for GaloppSim files
-        g_defaultPath = Application.UserLibraryPath
-   
+        g_defaultPath = Application.UserLibraryPath 'Add-in folder
+        
     'Determine the standard language according to the Excel version
         Select Case Application.LanguageSettings.LanguageID(msoLanguageIDUI)
             'German speaking countries
@@ -147,7 +150,11 @@ Private Sub Workbook_Open()
 '    Call basAuxiliary.GetTextComponents
     
     If g_strPlayMode = "RS" Then
-        Application.ActiveWindow.WindowState = xlMaximized 'Maximize the window
+        With Application
+            .ActiveWindow.WindowState = xlMaximized 'Maximize the window
+            objBasicData.XL_STYLE_NOTATION = .ReferenceStyle 'Save the current value
+            .ReferenceStyle = xlA1 'Force A1-style notation
+        End With
         Call RS_NewRace
     End If
     
@@ -155,6 +162,14 @@ Private Sub Workbook_Open()
 ERRORHANDLING:
     If g_errorLogging Then Call WriteErrorLog(VBA.Now, Err, Application.VBE.ActiveCodePane.CodeModule, "Workbook_Open()")
     Call basAuxiliary.CodeCrash
+End Sub
+
+'Call the SuperAdmin mode on double clicking the jockey´s eye
+Private Sub Workbook_SheetBeforeDoubleClick(ByVal Sh As Object, ByVal Target As Range, Cancel As Boolean)
+    If Sh.name = "GALOPPSIM" And Target.Address = Range("P11").Address Then
+        frmSuperAdmin.show (vbModeless)
+        Range("U15").Select
+    End If
 End Sub
 
 'This procedure is executed when the Workbook is being closed.
@@ -167,6 +182,7 @@ Private Sub Workbook_BeforeClose(Cancel As Boolean)
 '    Call basMainCode.ResetExcelOptions
 '    Application.ScreenUpdating = True
 '    If g_strPlayMode = "RS" Then
+'        Application.ReferenceStyle = objOption.XL_STYLE_NOTATION 'Restore the setting
 '        ThisWorkbook.Saved = True 'Do not save the workbook!
 '        'https://support.microsoft.com/en-us/help/213428/how-to-suppress-save-changes-prompt-when-you-close-a-workbook-in-excel
 '    End If

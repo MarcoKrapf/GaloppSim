@@ -38,7 +38,6 @@ Public Sub SaveRaceOptions()
                 Print #intFileNr, .lblRS_ro07.BackColor 'objOption.RACE_INFO_COL_B
                 Print #intFileNr, .lblRS_ro07.ForeColor 'objOption.RACE_INFO_COL_F
                 Print #intFileNr, CInt(.chkRS_ro02.Value) 'objOption.HOOFPRINTS
-                Print #intFileNr, .scrRS_ro01.Value 'objOption.ZOOM_LEVEL
                 Print #intFileNr, .scrRS_ro02.Value 'objOption.METRES_DISPLAY
                 Print #intFileNr, CInt(.chkRS_ro04.Value) 'objOption.NAMES_LEFT
                 Print #intFileNr, CInt(.chkRS_ro05.Value) 'objOption.COLOURS_LEFT
@@ -59,6 +58,7 @@ Public Sub SaveRaceOptions()
                 Print #intFileNr, .scrRefusalRate.Value 'objOption.REFUSAL_RATE
                 Print #intFileNr, CInt(.chk_TEO1.Value) 'objOption.TACTICS_REVEAL_TAC
                 Print #intFileNr, CInt(.chk_TEO2.Value) 'objOption.TACTICS_REVEAL_CURR
+                Print #intFileNr, CInt(.chkRS_ro19.Value) 'objOption.AUTOFIT
             End With
         Close #intFileNr 'Close the output channel
 
@@ -119,27 +119,27 @@ Public Sub LoadRaceOptions()
                 .lblRS_ro07.BackColor = arr_strSettings(16) 'objOption.RACE_INFO_COL_B
                 .lblRS_ro07.ForeColor = arr_strSettings(17) 'objOption.RACE_INFO_COL_F
                 .chkRS_ro02.Value = CBool(arr_strSettings(18)) 'objOption.HOOFPRINTS
-                .scrRS_ro01.Value = arr_strSettings(19) 'objOption.ZOOM_LEVEL
-                .scrRS_ro02.Value = arr_strSettings(20) 'objOption.METRES_DISPLAY
-                .chkRS_ro04.Value = CBool(arr_strSettings(21)) 'objOption.NAMES_LEFT
-                .chkRS_ro05.Value = CBool(arr_strSettings(22)) 'objOption.COLOURS_LEFT
-                .chkRS_ro06.Value = CBool(arr_strSettings(23)) 'objOption.HIGHLIGHT_FAV
-                .chkRS_ro07.Value = CBool(arr_strSettings(24)) 'objOption.NAMES_FINISH
-                .chkRS_ro08.Value = CBool(arr_strSettings(25)) 'objOption.RANKING_COL
-                .chkRS_ro09.Value = CBool(arr_strSettings(26)) 'objOption.RANKING_DELAY
-                .opt_ro01.Value = CBool(arr_strSettings(27)) 'objOption.RACE_INFO_POP
-                .opt_ro02.Value = CBool(arr_strSettings(28)) 'objOption.RACE_INFO_WKS
-                .scrRS_ro03.Value = arr_strSettings(29) 'objOption.SPEED_FACTOR
-                .chkRS_ro15.Value = CBool(arr_strSettings(30)) 'objOption.REFUSE_RUN
-                .chkRS_ro16.Value = CBool(arr_strSettings(31)) 'objOption.SPEECH
-                .chkRS_ro17.Value = CBool(arr_strSettings(32)) 'objOption.NAMES_PHOTO
-                .togRS_ro01.Value = CBool(arr_strSettings(33)) 'objOption.PHOTO_BW
-                .chkTribunes.Value = CBool(arr_strSettings(34)) 'objOption.TRIBUNES
-                .scrSpec.Value = arr_strSettings(35) 'objOption.SPECTATORS
-                .scrMomRefr.Value = arr_strSettings(36) 'objOption.MOMENTUM_REFRESHRATE
-                .scrRefusalRate.Value = arr_strSettings(37) 'objOption.REFUSAL_RATE
-                .chk_TEO1.Value = CBool(arr_strSettings(38)) 'objOption.TACTICS_REVEAL_TAC
-                .chk_TEO2.Value = CBool(arr_strSettings(39)) 'objOption.TACTICS_REVEAL_CURR
+                .scrRS_ro02.Value = arr_strSettings(19) 'objOption.METRES_DISPLAY
+                .chkRS_ro04.Value = CBool(arr_strSettings(20)) 'objOption.NAMES_LEFT
+                .chkRS_ro05.Value = CBool(arr_strSettings(21)) 'objOption.COLOURS_LEFT
+                .chkRS_ro06.Value = CBool(arr_strSettings(22)) 'objOption.HIGHLIGHT_FAV
+                .chkRS_ro07.Value = CBool(arr_strSettings(23)) 'objOption.NAMES_FINISH
+                .chkRS_ro08.Value = CBool(arr_strSettings(24)) 'objOption.RANKING_COL
+                .chkRS_ro09.Value = CBool(arr_strSettings(25)) 'objOption.RANKING_DELAY
+                .opt_ro01.Value = CBool(arr_strSettings(26)) 'objOption.RACE_INFO_POP
+                .opt_ro02.Value = CBool(arr_strSettings(27)) 'objOption.RACE_INFO_WKS
+                .scrRS_ro03.Value = arr_strSettings(28) 'objOption.SPEED_FACTOR
+                .chkRS_ro15.Value = CBool(arr_strSettings(29)) 'objOption.REFUSE_RUN
+                .chkRS_ro16.Value = CBool(arr_strSettings(30)) 'objOption.SPEECH
+                .chkRS_ro17.Value = CBool(arr_strSettings(31)) 'objOption.NAMES_PHOTO
+                .togRS_ro01.Value = CBool(arr_strSettings(32)) 'objOption.PHOTO_BW
+                .chkTribunes.Value = CBool(arr_strSettings(33)) 'objOption.TRIBUNES
+                .scrSpec.Value = arr_strSettings(34) 'objOption.SPECTATORS
+                .scrMomRefr.Value = arr_strSettings(35) 'objOption.MOMENTUM_REFRESHRATE
+                .scrRefusalRate.Value = arr_strSettings(36) 'objOption.REFUSAL_RATE
+                .chk_TEO1.Value = CBool(arr_strSettings(37)) 'objOption.TACTICS_REVEAL_TAC
+                .chk_TEO2.Value = CBool(arr_strSettings(38)) 'objOption.TACTICS_REVEAL_CURR
+                .chkRS_ro19.Value = CBool(arr_strSettings(39)) 'objOption.AUTOFIT
             End With
         'Show a pop-up: "Restored successfully."
         Call ShowMessagePopup(GetText(g_arr_Text, "BTN001") & " - " & GetText(g_arr_Text, "RACEOPT038"), _
