@@ -5,6 +5,7 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 
 ### Version 151.50 (25 April 2021)
 * 24 races
+* Coronavirus test station
 * Race Speed Monitor (Speed and Distance Mode) 
 * Race Recorder (replay, save and load)
 * Momentum display enhanced (bars and icons)
