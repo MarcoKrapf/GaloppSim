@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmOptionsExcel 
    Caption         =   "[Excel options]"
-   ClientHeight    =   4380
-   ClientLeft      =   72
-   ClientTop       =   276
-   ClientWidth     =   6084
+   ClientHeight    =   6624
+   ClientLeft      =   12
+   ClientTop       =   24
+   ClientWidth     =   9624
    OleObjectBlob   =   "frmOptionsExcel.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End
@@ -24,6 +24,11 @@ Private Sub UserForm_Initialize()
         .caption = GetText(g_arr_Text, "USERFORM002")
         .Height = 285
         .width = 328
+        
+        .StartUpPosition = 0 'Place the UserForm in the upper left corner
+        .top = 0
+        .left = 0
+
         .chkRS_eo01.caption = GetText(g_arr_Text, "EXCELOPT003")
         .chkRS_eo02.caption = GetText(g_arr_Text, "EXCELOPT004")
         .chkRS_eo03.caption = GetText(g_arr_Text, "EXCELOPT005")
@@ -43,6 +48,7 @@ Private Sub UserForm_Initialize()
     
     'Display the UserForm in the center of the Window
     Call basAuxiliary.PlaceUserFormInCenter(Me)
+    
 End Sub
 
 Private Sub SetCheckboxes() 'Set the checkbox values

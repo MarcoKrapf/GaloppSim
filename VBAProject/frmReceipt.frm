@@ -1,9 +1,9 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmReceipt 
-   ClientHeight    =   4800
+   ClientHeight    =   5760
    ClientLeft      =   -24
    ClientTop       =   -60
-   ClientWidth     =   5064
+   ClientWidth     =   5604
    OleObjectBlob   =   "frmReceipt.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End

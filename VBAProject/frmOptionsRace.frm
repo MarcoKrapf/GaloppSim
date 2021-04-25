@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmOptionsRace 
    Caption         =   "[Race options]"
-   ClientHeight    =   7020
-   ClientLeft      =   -684
-   ClientTop       =   -3012
-   ClientWidth     =   11460
+   ClientHeight    =   11280
+   ClientLeft      =   -1812
+   ClientTop       =   -7860
+   ClientWidth     =   14112
    OleObjectBlob   =   "frmOptionsRace.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End
@@ -48,9 +48,16 @@ Private Sub UserForm_Initialize()
         'Momentum speed bars refresh rate
         With scrMomRefr
             .min = 1 'Minumum value
-            .max = 8 'Maximum value
+            .max = 60 'Maximum value
             .SmallChange = 1 'value change when using the arrows
-            .LargeChange = 1 'value change when clicking inside the slider
+            .LargeChange = 10 'value change when clicking inside the slider
+        End With
+        'Race speed monitor refresh rate
+        With scrRSMonRefr
+            .min = 10 'Minumum value
+            .max = 50 'Maximum value
+            .SmallChange = 1 'value change when using the arrows
+            .LargeChange = 10 'value change when clicking inside the slider
         End With
         'Start refusal rate
         With scrRefusalRate
@@ -59,6 +66,13 @@ Private Sub UserForm_Initialize()
             .SmallChange = 1 'value change when using the arrows
             .LargeChange = 10 'value change when clicking inside the slider
         End With
+        'Slipstream effect
+        With scrSlipstream
+            .min = 0 'Minumum value
+            .max = 2 'Maximum value
+            .SmallChange = 1 'value change when using the arrows
+            .LargeChange = 1 'value change when clicking inside the slider
+        End With
         
     'Settings of the toggle buttons
         'Toggle button for the colours of the photo of the finish
@@ -66,8 +80,11 @@ Private Sub UserForm_Initialize()
          Call togRS_ro01_Click
     
     With Me
-        .Height = 545
+        .Height = 590
         .width = 685
+        .StartUpPosition = 0 'Place the UserForm in the upper left corner
+        .top = 0
+        .left = 0
         'Captions
         .caption = GetText(g_arr_Text, "USERFORM001")
         .lblRS_ro01.caption = GetText(g_arr_Text, "RACEOPT001")
@@ -85,10 +102,11 @@ Private Sub UserForm_Initialize()
         .chkRS_ro14.caption = GetText(g_arr_Text, "RACEOPT034")
         .chkRS_ro11a.caption = GetText(g_arr_Text, "RACEOPT022")
         .chkRS_ro11b.caption = GetText(g_arr_Text, "RACEOPT024")
-        .fraRS_ro03.caption = GetText(g_arr_Text, "RACEOPT018")
-        .chkRS_ro12a.caption = GetText(g_arr_Text, "RACEOPT019")
-        .chkRS_ro12b.caption = GetText(g_arr_Text, "RACEOPT020")
-        .chkRS_ro12c.caption = GetText(g_arr_Text, "RACEOPT021")
+        .fraRS_ro03.caption = GetText(g_arr_Text, "RACEOPT020")
+        .lbl_slipstream_0.caption = GetText(g_arr_Text, "RACEOPT074")
+        .lbl_slipstream_1.caption = GetText(g_arr_Text, "RACEOPT075")
+        .lbl_slipstream_2.caption = GetText(g_arr_Text, "RACEOPT076")
+        .chk_SlipstreamShow.caption = GetText(g_arr_Text, "RACEOPT021")
         .fraRS_ro04.caption = GetText(g_arr_Text, "RACEOPT026")
         .opt_foc01.caption = GetText(g_arr_Text, "RACEOPT056")
         .opt_foc02.caption = GetText(g_arr_Text, "RACEOPT058") & " " & g_arr_Grammar(2) & " " & GetText(g_arr_Text, "START006") & " " & GetText(g_arr_Text, "RACEOPT027")
@@ -106,6 +124,7 @@ Private Sub UserForm_Initialize()
         .chkRS_ro04.caption = GetText(g_arr_Text, "RACEOPT005")
         .chkRS_ro05.caption = GetText(g_arr_Text, "RACEOPT006")
         .chkRS_ro06.caption = GetText(g_arr_Text, "RACEOPT007")
+        .chkFavAnn.caption = GetText(g_arr_Text, "RACEOPT090")
         .chkRS_ro07.caption = GetText(g_arr_Text, "RACEOPT008")
         .fraRS_ro09.caption = GetText(g_arr_Text, "RACEOPT003")
         .lblRS_ro09.caption = GetText(g_arr_Text, "RACEOPT041")
@@ -123,18 +142,29 @@ Private Sub UserForm_Initialize()
         .chkRS_ro17.caption = GetText(g_arr_Text, "RACEOPT049a") & " " & g_arr_Grammar(4) & " " & GetText(g_arr_Text, "RACEOPT049b")
         .fraRS_ro10.caption = GetText(g_arr_Text, "BTN004")
         .fraRS_ro13.caption = GetText(g_arr_Text, "RACEOPT052")
-        .chkRS_ro18.caption = GetText(g_arr_Text, "RACEOPT053")
+        .chk_MOM1.caption = GetText(g_arr_Text, "RACEOPT053")
+        .chk_MOM2.caption = GetText(g_arr_Text, "RACEOPT077")
+        .fraRSMon.caption = GetText(g_arr_Text, "RACEOPT079")
+        .chkRSMon.caption = GetText(g_arr_Text, "RACEOPT080")
+        .optRSMon1.caption = GetText(g_arr_Text, "RACEOPT092")
+        .optRSMon2.caption = GetText(g_arr_Text, "RACEOPT093")
         .chkTribunes.caption = GetText(g_arr_Text, "RACEOPT059")
         .fraRS_ro14.caption = GetText(g_arr_Text, "RACEOPT060")
         .lblSpec1.caption = GetText(g_arr_Text, "RACEOPT061")
         .lblSpec2.caption = GetText(g_arr_Text, "RACEOPT062")
-        .lblMomRefr.caption = GetText(g_arr_Text, "RACEOPT063") & " " & objOption.MOMENTUM_REFRESHRATE & " " & GetText(g_arr_Text, "RACEOPT064")
+        .lblMomRefr.caption = GetText(g_arr_Text, "RACEOPT087")
+        .lblRefrLow1.caption = GetText(g_arr_Text, "RACEOPT088")
+        .lblRefrHigh1.caption = GetText(g_arr_Text, "RACEOPT089")
+        .lblRSMonRefr.caption = GetText(g_arr_Text, "RACEOPT087")
+        .lblRefrLow2.caption = GetText(g_arr_Text, "RACEOPT088")
+        .lblRefrHigh2.caption = GetText(g_arr_Text, "RACEOPT089")
         .lblRefusalRate.caption = "1 " & GetText(g_arr_Text, "RACEOPT065") & " " & objOption.REFUSAL_RATE & " " & GetText(g_arr_Text, "RACEOPT066")
         .chk_TEO1.caption = GetText(g_arr_Text, "RACEOPT068")
         .chk_TEO2.caption = GetText(g_arr_Text, "RACEOPT069")
         .lblRS_ro14.caption = GetText(g_arr_Text, "RACEOPT071")
         .lblRS_ro15.caption = GetText(g_arr_Text, "RACEOPT072")
         .chkRS_ro19.caption = GetText(g_arr_Text, "RACEOPT073")
+        .chkAutoSaveRace.caption = GetText(g_arr_Text, "RACEOPT091")
         
         'ControlTipTexts
         .optRS_ro01.ControlTipText = GetText(g_arr_Text, "TIP001a") & " " & g_arr_Grammar(4) & " " & GetText(g_arr_Text, "TIP001b")
@@ -147,6 +177,7 @@ Private Sub UserForm_Initialize()
         .chkRS_ro04.ControlTipText = GetText(g_arr_Text, "TIP005a") & " " & g_arr_Grammar(6) & " " & GetText(g_arr_Text, "TIP005b")
         .chkRS_ro05.ControlTipText = GetText(g_arr_Text, "TIP006") & " " & g_arr_Grammar(6) & " " & GetText(g_arr_Text, "TIP005b")
         .chkRS_ro06.ControlTipText = GetText(g_arr_Text, "TIP007")
+        .chkFavAnn.ControlTipText = GetText(g_arr_Text, "TIP001a") & " " & g_arr_Grammar(4) & " " & GetText(g_arr_Text, "TIP055")
         .chkRS_ro07.ControlTipText = GetText(g_arr_Text, "TIP008a") & " " & g_arr_Grammar(6) & " " & GetText(g_arr_Text, "TIP008b")
         .chkRS_ro08.ControlTipText = GetText(g_arr_Text, "TIP009a") & " " & g_arr_Grammar(6) & " " & GetText(g_arr_Text, "TIP009b")
         .chkRS_ro09.ControlTipText = GetText(g_arr_Text, "TIP010")
@@ -154,18 +185,26 @@ Private Sub UserForm_Initialize()
         .chkRS_ro11a.ControlTipText = GetText(g_arr_Text, "RACEOPT023")
         .chkRS_ro11b.ControlTipText = GetText(g_arr_Text, "RACEOPT025")
         .chkRS_ro15.ControlTipText = g_arr_Grammar(3) & " " & GetText(g_arr_Text, "TIP016")
-        .chkRS_ro12a.ControlTipText = GetText(g_arr_Text, "TIP001a") & " " & g_arr_Grammar(4) & " " & GetText(g_arr_Text, "TIP017a") & " " & g_arr_Grammar(6) & " " & GetText(g_arr_Text, "TIP017b")
-        .chkRS_ro12b.ControlTipText = GetText(g_arr_Text, "TIP018") & " " & g_arr_Grammar(4)
-        .chkRS_ro12c.ControlTipText = GetText(g_arr_Text, "TIP019")
+        .fraRS_ro03.ControlTipText = GetText(g_arr_Text, "RACEOPT019")
+        .scrSlipstream.ControlTipText = GetText(g_arr_Text, "TIP001a") & " " & g_arr_Grammar(4) & " " & GetText(g_arr_Text, "TIP017a") & " " & g_arr_Grammar(6) & " " & GetText(g_arr_Text, "TIP017b") & ". " _
+             & GetText(g_arr_Text, "TIP018") & " " & g_arr_Grammar(4) & "."
+        .lbl_slipstream_1.ControlTipText = GetText(g_arr_Text, "TIP050")
+        .lbl_slipstream_2.ControlTipText = GetText(g_arr_Text, "TIP051")
+        .chk_SlipstreamShow.ControlTipText = GetText(g_arr_Text, "TIP019")
         .chkRS_ro16.ControlTipText = GetText(g_arr_Text, "TIP020")
         .scrRS_ro03.ControlTipText = GetText(g_arr_Text, "TIP021a") & " " & g_arr_Grammar(4) & " " & GetText(g_arr_Text, "TIP021b")
         .cmdRS_ro03a.ControlTipText = GetText(g_arr_Text, "TIP022")
         .cmdRS_ro03b.ControlTipText = GetText(g_arr_Text, "TIP023")
-        .chkRS_ro18.ControlTipText = GetText(g_arr_Text, "TIP028") & " " & UCase(GetText(g_arr_Text, "TIP034"))
+        .chk_MOM1.ControlTipText = GetText(g_arr_Text, "TIP028")
+        .chk_MOM2.ControlTipText = GetText(g_arr_Text, "TIP052")
+        .chkRSMon.ControlTipText = GetText(g_arr_Text, "TIP053") & " " & g_arr_Grammar(8) & " " & GetText(g_arr_Text, "TIP054")
+        .optRSMon1.ControlTipText = GetText(g_arr_Text, "TIP060")
+        .optRSMon2.ControlTipText = GetText(g_arr_Text, "TIP061")
         .chkTribunes.ControlTipText = GetText(g_arr_Text, "TIP035")
         .chk_TEO1.ControlTipText = GetText(g_arr_Text, "TIP029")
         .chk_TEO2.ControlTipText = GetText(g_arr_Text, "TIP030")
         .chkRS_ro19.ControlTipText = GetText(g_arr_Text, "TIP036")
+        .chkAutoSaveRace.ControlTipText = GetText(g_arr_Text, "TIP056") & " " & g_defaultAutoSavePath
         
         'Get values
         .optRS_ro01.Value = (objOption.TACTICS = False)
@@ -184,6 +223,7 @@ Private Sub UserForm_Initialize()
         .chkRS_ro04.Value = objOption.NAMES_LEFT
         .chkRS_ro05.Value = objOption.COLOURS_LEFT
         .chkRS_ro06.Value = objOption.HIGHLIGHT_FAV
+        .chkFavAnn.Value = objOption.ANNOUNCE_FAV
         .chkRS_ro07.Value = objOption.NAMES_FINISH
         .chkRS_ro17.Value = objOption.NAMES_PHOTO
         .chkRS_ro08.Value = objOption.RANKING_COL
@@ -206,30 +246,44 @@ Private Sub UserForm_Initialize()
         .chkRS_ro11a.Value = objOption.BET_MODE
         .chkRS_ro11b.Value = objOption.BET_ANALYSIS
         .chkRS_ro11b.Enabled = (objOption.BET_MODE = True) 'Enabled only if the "Placing bets" checkbox is ticked
-        .chkRS_ro12a.Value = objOption.SLIPSTREAM
-        .chkRS_ro12b.Value = objOption.SLIPSTREAM_DBL
-        .chkRS_ro12b.Enabled = (objOption.SLIPSTREAM = True) 'Enabled only if the "Slipstreaming" checkbox is ticked
-        .chkRS_ro12c.Value = objOption.SLIPSTREAM_SHOW
-        .chkRS_ro12c.Enabled = (objOption.SLIPSTREAM = True) 'Enabled only if the "Slipstreaming" checkbox is ticked
+        .scrSlipstream.Value = objOption.SLIPSTREAM_IMPACT
+        .chk_SlipstreamShow.Value = objOption.SLIPSTREAM_SHOW
+        .chk_SlipstreamShow.Enabled = (objOption.SLIPSTREAM_IMPACT > 0) 'Enabled only if slipstream impact is activated
         .scrRS_ro03.Value = objOption.SPEED_FACTOR
         .chkRS_ro15.Value = objOption.REFUSE_RUN
         .scrRefusalRate.Value = objOption.REFUSAL_RATE
-        .scrMomRefr.Enabled = (objOption.REFUSE_RUN = True) 'Enabled only if the "Refuse to run" checkbox is ticked
-        .lblMomRefr.Enabled = (objOption.REFUSE_RUN = True) 'Enabled only if the "Refuse to run" checkbox is ticked
+        .scrRefusalRate.Enabled = (objOption.REFUSE_RUN = True) 'Enabled only if the "Refuse to run" checkbox is ticked
+        .lblRefusalRate.Enabled = (objOption.REFUSE_RUN = True) 'Enabled only if the "Refuse to run" checkbox is ticked
         .chkRS_ro16.Value = objOption.SPEECH
         .chkTribunes.Value = objOption.TRIBUNES
         .scrSpec.Value = objOption.SPECTATORS 'in %
-        .chkRS_ro18.Value = objOption.MOMENTUM
+        .chk_MOM1.Value = objOption.MOMENTUM_BARS
+        .chk_MOM2.Value = objOption.MOMENTUM_ICONS
         .scrMomRefr.Value = objOption.MOMENTUM_REFRESHRATE
-        .scrMomRefr.Enabled = (objOption.MOMENTUM = True) 'Enabled only if the "Momentum" checkbox is ticked
-        .lblMomRefr.Enabled = (objOption.MOMENTUM = True) 'Enabled only if the "Momentum" checkbox is ticked
+        .scrMomRefr.Enabled = (objOption.MOMENTUM_BARS = True Or objOption.MOMENTUM_ICONS = True) 'Enabled only if one of the "Momentum" checkboxes is ticked
+        .lblMomRefr.Enabled = (objOption.MOMENTUM_BARS = True Or objOption.MOMENTUM_ICONS = True) 'Enabled only if one of the "Momentum" checkboxes is ticked
+        .lblRefrLow1.Enabled = (objOption.MOMENTUM_BARS = True Or objOption.MOMENTUM_ICONS = True) 'Enabled only if one of the "Momentum" checkboxes is ticked
+        .lblRefrHigh1.Enabled = (objOption.MOMENTUM_BARS = True Or objOption.MOMENTUM_ICONS = True) 'Enabled only if one of the "Momentum" checkboxes is ticked
+        .chkRSMon.Value = objOption.SPEEDMONITOR
+        .scrRSMonRefr.Value = objOption.SPEEDMON_REFRESHRATE
+        .scrRSMonRefr.Enabled = (objOption.SPEEDMONITOR = True) 'Enabled only if the "RSMon" checkbox is ticked
+        .lblRSMonRefr.Enabled = (objOption.SPEEDMONITOR = True) 'Enabled only if the "RSMon" checkbox is ticked
+        .lblRefrLow2.Enabled = (objOption.SPEEDMONITOR = True) 'Enabled only if the "RSMon" checkbox is ticked
+        .lblRefrHigh2.Enabled = (objOption.SPEEDMONITOR = True) 'Enabled only if the "RSMon" checkbox is ticked
+        .optRSMon1.Value = objOption.RSMON_SPEED
+        .optRSMon2.Value = objOption.RSMON_DISTANCE
+        .optRSMon1.Enabled = (objOption.SPEEDMONITOR = True) 'Enabled only if the "RSMon" checkbox is ticked
+        .optRSMon2.Enabled = (objOption.SPEEDMONITOR = True) 'Enabled only if the "RSMon" checkbox is ticked
         .chkRS_ro19.Value = objOption.AUTOFIT
-        
-        .StartUpPosition = 2 'Display the UserForm in the center of the screen
+        .chkAutoSaveRace.Value = objOption.AUTO_SAVE
     End With
     
     'Set the initial race info preview colours
     Call DefaultPreviewColours
+    
+    'Display the UserForm in the center of the Window
+    Call basAuxiliary.PlaceUserFormInCenter(Me)
+    
 End Sub
 
 'Option button "Race info in a pop-up"
@@ -288,9 +342,8 @@ Private Sub cmdRS_ro01_Click()
     End Select
     objOption.TACTICS_REVEAL_TAC = chk_TEO1.Value
     objOption.TACTICS_REVEAL_CURR = chk_TEO2.Value
-    objOption.SLIPSTREAM = chkRS_ro12a.Value
-    objOption.SLIPSTREAM_DBL = chkRS_ro12b.Value
-    objOption.SLIPSTREAM_SHOW = chkRS_ro12c.Value
+    objOption.SLIPSTREAM_IMPACT = scrSlipstream.Value
+    objOption.SLIPSTREAM_SHOW = chk_SlipstreamShow.Value
     Select Case True
         Case opt_foc01.Value
             objOption.FOCUSED_RUN = enumCamera.standard
@@ -305,6 +358,7 @@ Private Sub cmdRS_ro01_Click()
     objOption.NAMES_LEFT = chkRS_ro04.Value
     objOption.COLOURS_LEFT = chkRS_ro05.Value
     objOption.HIGHLIGHT_FAV = chkRS_ro06.Value
+    objOption.ANNOUNCE_FAV = chkFavAnn.Value
     objOption.NAMES_FINISH = chkRS_ro07.Value
     objOption.NAMES_PHOTO = chkRS_ro17.Value
     objOption.PHOTO_BW = togRS_ro01.Value
@@ -323,11 +377,17 @@ Private Sub cmdRS_ro01_Click()
     objOption.REFUSE_RUN = chkRS_ro15.Value
     objOption.REFUSAL_RATE = scrRefusalRate.Value
     objOption.SPEECH = chkRS_ro16.Value
-    objOption.MOMENTUM = chkRS_ro18.Value
+    objOption.MOMENTUM_BARS = chk_MOM1.Value
+    objOption.MOMENTUM_ICONS = chk_MOM2.Value
     objOption.MOMENTUM_REFRESHRATE = scrMomRefr.Value
+    objOption.SPEEDMONITOR = chkRSMon.Value
+    objOption.RSMON_SPEED = optRSMon1
+    objOption.RSMON_DISTANCE = optRSMon2
+    objOption.SPEEDMON_REFRESHRATE = scrRSMonRefr.Value
     objOption.TRIBUNES = chkTribunes.Value
     objOption.SPECTATORS = scrSpec.Value
     objOption.AUTOFIT = chkRS_ro19.Value
+    objOption.AUTO_SAVE = chkAutoSaveRace.Value
     
     'Adapt the caption of the race start button ("Start the race" or "Betting and race")
     If g_strPlayMode = "RS" Then
@@ -360,26 +420,43 @@ Private Sub chkRS_ro11a_Click()
     Me.chkRS_ro11b.Enabled = (Me.chkRS_ro11a.Value = True) 'Set the status dependent on the "Placing bets" main checkbox
 End Sub
 
-'Click on the "Slipstreaming" checkbox
-Private Sub chkRS_ro12a_Click()
-    With Me
-        .chkRS_ro12b.Enabled = (.chkRS_ro12a.Value = True) 'Set the status dependent on the "Slipstreaming" main checkbox
-        .chkRS_ro12c.Enabled = (.chkRS_ro12a.Value = True) 'Set the status dependent on the "Slipstreaming" main checkbox
-    End With
-End Sub
-
-'Click on the "Momentum" checkbox
-Private Sub chkRS_ro18_Click()
+'Click on the "Momentum speed bars" checkbox
+Private Sub chk_MOM1_Click()
     With Me 'Set the status dependent on the checkbox above
-        .scrMomRefr.Enabled = (Me.chkRS_ro18.Value = True)
-        .lblMomRefr.Enabled = (Me.chkRS_ro18.Value = True)
+        .scrMomRefr.Enabled = (Me.chk_MOM1.Value = True Or Me.chk_MOM2.Value = True)
+        .lblMomRefr.Enabled = (Me.chk_MOM1.Value = True Or Me.chk_MOM2.Value = True)
+        .lblRefrLow1.Enabled = (Me.chk_MOM1.Value = True Or Me.chk_MOM2.Value = True)
+        .lblRefrHigh1.Enabled = (Me.chk_MOM1.Value = True Or Me.chk_MOM2.Value = True)
     End With
 End Sub
 
-'Change of the momentum refresh rate slider position
-Private Sub scrMomRefr_Change()
-    'Adapt the text
-    lblMomRefr.caption = GetText(g_arr_Text, "RACEOPT063") & " " & scrMomRefr.Value & " " & GetText(g_arr_Text, "RACEOPT064")
+'Click on the "Momentum icons" checkbox
+Private Sub chk_MOM2_Click()
+    With Me 'Set the status dependent on the checkbox above
+        .scrMomRefr.Enabled = (Me.chk_MOM2.Value = True Or Me.chk_MOM1.Value = True)
+        .lblMomRefr.Enabled = (Me.chk_MOM2.Value = True Or Me.chk_MOM1.Value = True)
+        .lblRefrLow1.Enabled = (Me.chk_MOM2.Value = True Or Me.chk_MOM1.Value = True)
+        .lblRefrHigh1.Enabled = (Me.chk_MOM2.Value = True Or Me.chk_MOM1.Value = True)
+    End With
+End Sub
+
+'Click on the "RSMon" checkbox
+Private Sub chkRSMon_Click()
+   With Me 'Set the status dependent on the checkbox above
+    .scrRSMonRefr.Enabled = (.chkRSMon.Value = True)
+    .lblRSMonRefr.Enabled = (.chkRSMon.Value = True)
+    .lblRefrLow2.Enabled = (.chkRSMon.Value = True)
+    .lblRefrHigh2.Enabled = (.chkRSMon.Value = True)
+    .optRSMon1.Enabled = (.chkRSMon.Value = True)
+    .optRSMon2.Enabled = (.chkRSMon.Value = True)
+End With
+End Sub
+
+'Change of the slipstream slider position
+Private Sub scrSlipstream_Change()
+    With Me
+        .chk_SlipstreamShow.Enabled = (.scrSlipstream.Value > 0) 'Activate dependent on the slipstream slider
+    End With
 End Sub
 
 'Click on the "Refuse to run" checkbox

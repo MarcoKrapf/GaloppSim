@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmRS_navigation 
    Caption         =   "[Run Simple edition]"
-   ClientHeight    =   2880
+   ClientHeight    =   3468
    ClientLeft      =   96
    ClientTop       =   240
-   ClientWidth     =   6900
+   ClientWidth     =   8880
    OleObjectBlob   =   "frmRS_navigation.frx":0000
    ShowModal       =   0   'False
    StartUpPosition =   1  'Fenstermitte
@@ -14,6 +14,7 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
 Option Explicit
 
 'Pop-up with the navigation panel
@@ -82,6 +83,7 @@ Private Sub cmdNavigation_Click()
     Unload Me
     Call basAuxiliary.ActivateRaceSheet 'Activate the GALOPPSIM worksheet
     If objOption.AUTOFIT Then Call AutoZoom("FIX", 100) '100%
+    Call basAuxiliary.Freeze(0, 0, False) 'Unfreeze
     Call basAuxiliary.Scroll(1, 1) 'Scroll to the upper left
 End Sub
 

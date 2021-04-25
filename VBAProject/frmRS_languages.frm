@@ -1,9 +1,9 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmRS_languages 
-   ClientHeight    =   3396
+   ClientHeight    =   2628
    ClientLeft      =   12
    ClientTop       =   -72
-   ClientWidth     =   6480
+   ClientWidth     =   5724
    OleObjectBlob   =   "frmRS_languages.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End
@@ -21,22 +21,18 @@ Private Sub UserForm_Initialize()
     With Me
         'Captions
         .caption = g_c_tool
-        .Height = 178
-        .width = 242
+        .Height = 110
+        .width = 250
         .fraRS_lan01.caption = GetText(g_arr_Text, "LANGUAGE001")
         .optRS_lan01.caption = GetText(g_arr_Text, "LANGUAGE002") 'German
         .optRS_lan02.caption = GetText(g_arr_Text, "LANGUAGE003") 'English
-        .optRS_lan03.caption = GetText(g_arr_Text, "LANGUAGE006") 'Bulgarian
         'OK button
         With cmdRS_lan01
             .caption = GetText(g_arr_Text, "BTN014")
-            .AutoSize = True
-            .left = Me.width - .width - 18 'Position
         End With
         'Get the values of the radio buttons depending on the current language
         .optRS_lan01.Value = (objOption.language = "DE")
         .optRS_lan02.Value = (objOption.language = "EN")
-        .optRS_lan03.Value = (objOption.language = "BG")
     End With
     
     'Display the UserForm in the centre of the window
@@ -51,8 +47,6 @@ Private Sub cmdRS_lan01_Click()
             objOption.language = "DE"
         Case optRS_lan02.Value
             objOption.language = "EN"
-        Case optRS_lan03.Value
-            objOption.language = "BG"
     End Select
     Unload Me 'Close the UserForm
 End Sub

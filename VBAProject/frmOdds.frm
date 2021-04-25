@@ -1,9 +1,9 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmOdds 
-   ClientHeight    =   6516
+   ClientHeight    =   8076
    ClientLeft      =   84
    ClientTop       =   264
-   ClientWidth     =   9072
+   ClientWidth     =   10596
    OleObjectBlob   =   "frmOdds.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End

@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmTestSuite 
    Caption         =   "RACE TEST AUTOMATION (RTA)"
-   ClientHeight    =   6288
-   ClientLeft      =   -1212
-   ClientTop       =   -4908
-   ClientWidth     =   7080
+   ClientHeight    =   8940
+   ClientLeft      =   -1260
+   ClientTop       =   -5172
+   ClientWidth     =   9972
    OleObjectBlob   =   "frmTestSuite.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End
@@ -20,7 +20,7 @@ Option Explicit
 
 Private Sub btnTestStart_Click()
     
-    If multiPage.Value = 0 Then 'Standard
+    If multiPage.Value = 0 Then 'Standard test mode
 
         Dim colTestRaces As Collection
         Dim i As Integer
@@ -37,8 +37,21 @@ Private Sub btnTestStart_Click()
         Call TestStart_std(colTestRaces, opt2_std.Value, chk1_std.Value, _
                 chk2_std.Value, chk3_std.Value, chk4_std.Value, chk6_std.Value, chk7_std.Value)
     
-    Else 'Test repository (not yet implemented)
-
+    Else 'Test repository
+    
+        Dim arr_TestRaces(2, 2) As Variant
+        
+        With listboxRaces_rep
+            For i = 0 To .ListCount - 1
+                If .SELECTED(i) Then
+'                    colTestRaces.Add (.List(i))
+'                    colTestRaces.Add (.List(i))
+                End If
+            Next i
+        End With
+        For i = 1 To colTestRaces.count
+            Debug.Print colTestRaces(i)
+        Next
     End If
 End Sub
 
@@ -105,7 +118,6 @@ Private Sub togMinMax_Click()
 End Sub
 
 
-
 Private Sub UserForm_Initialize()
     Dim item As Integer
     
@@ -116,7 +128,7 @@ Private Sub UserForm_Initialize()
     
     'Fill the "Standard" list box with all installed races
     With listboxRaces_std
-        .MultiSelect = fmMultiSelectExtended
+        .MultiSelect = fmMultiSelectMulti
         For item = 1 To g_colRacesInstalled.count
             .AddItem g_colRacesInstalled(item)
         Next item
@@ -124,7 +136,7 @@ Private Sub UserForm_Initialize()
     
     'Fill the "Test repository" list box with the test cases from Worksheet "TESTCASES"
     With listboxRaces_rep
-        .MultiSelect = fmMultiSelectExtended
+        .MultiSelect = fmMultiSelectMulti
         For item = 4 To g_wksTCASE.Cells(1, Columns.count).End(xlToLeft).Column
             .AddItem g_wksTCASE.Cells(1, item).Value _
             & " (" & g_wksTCASE.Cells(2, item).Value & ")"
@@ -134,5 +146,6 @@ Private Sub UserForm_Initialize()
     btnTestStart.Enabled = False
     
     multiPage.Value = 0 'Select the first page
+
     multiPage.Pages(1).Enabled = False
 End Sub

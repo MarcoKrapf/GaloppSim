@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmMachineLearning 
    Caption         =   "Machine Learning Race Simulation"
-   ClientHeight    =   6768
-   ClientLeft      =   -1380
-   ClientTop       =   -5628
-   ClientWidth     =   7356
+   ClientHeight    =   6852
+   ClientLeft      =   -1428
+   ClientTop       =   -5808
+   ClientWidth     =   5568
    OleObjectBlob   =   "frmMachineLearning.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End
@@ -124,7 +124,6 @@ Private Sub UserForm_Initialize()
     btnDataFile.BackColor = &H80FFFF
     btnMLStart.BackColor = &H8000000F
     btnMLStart.Enabled = False
-    
     
     varSave = g_defaultMLpath & Application.PathSeparator & g_MLdataFileName & ".csv"
     frmMachineLearning.chkExport.caption = "Export data to" & vbNewLine _

@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmMsg_Info 
    Caption         =   "[Caption]"
-   ClientHeight    =   1536
-   ClientLeft      =   108
-   ClientTop       =   360
-   ClientWidth     =   7248
+   ClientHeight    =   6180
+   ClientLeft      =   24
+   ClientTop       =   24
+   ClientWidth     =   8748
    OleObjectBlob   =   "frmMsg_Info.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End

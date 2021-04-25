@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmRaceInfo 
    Caption         =   "[Race info]"
-   ClientHeight    =   4260
+   ClientHeight    =   5964
    ClientLeft      =   -36
    ClientTop       =   -192
-   ClientWidth     =   10152
+   ClientWidth     =   11724
    OleObjectBlob   =   "frmRaceInfo.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End

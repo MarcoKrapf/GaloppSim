@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmInp_MultiPurpose 
    Caption         =   "[Caption]"
-   ClientHeight    =   1788
-   ClientLeft      =   72
-   ClientTop       =   264
-   ClientWidth     =   4656
+   ClientHeight    =   2640
+   ClientLeft      =   24
+   ClientTop       =   84
+   ClientWidth     =   4992
    OleObjectBlob   =   "frmInp_MultiPurpose.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End
