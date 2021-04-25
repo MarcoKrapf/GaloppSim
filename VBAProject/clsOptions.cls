@@ -21,8 +21,7 @@ Private intIncidentRefusalRate As Integer 'Start refusal rate
 Private blnTactics As Boolean 'Racing tactics (true or false)
 Private blnTacticsRevelationTac As Boolean 'If true: Reveal tactics
 Private blnTacticsRevelationCurr As Boolean 'If true: Show the current speed
-Private blnSlipstream As Boolean 'If true: Slipstream effect is active
-Private blnSlipstreamDouble As Boolean 'If true: Double slipstream effect is active
+Private intSlipstream As Integer 'Impact of slipstream effect
 Private blnSlipstreamShow As Boolean 'If true: Slipstream effect is displayed graphically
 Private lngFocusedRun As Long 'Camera mode (enumCamera "standard", "focus_horse", "focus_leader")
 Private intFocusedRun As Integer 'Number of the focused horse
@@ -30,6 +29,7 @@ Private blnHighlightFoc As Boolean 'If true: The horse in focus is highlighted d
 Private blnHoofprints As Boolean 'If true: Hoof prints are displayed
 Private blnHorseNamesLeft As Boolean 'If true: The names of the horses are permanently displayed at the left margin
 Private blnHorseColoursLeft As Boolean 'If true: The colours of the horse are permanently displayed on the left margin
+Private blnAnnounceFav As Boolean 'If true: The horses with the best chances will be announced before the race
 Private blnHighlightFav As Boolean 'If true: The favourite horse is highlighted during the race
 Private blnHorseNamesFinish As Boolean 'If true: The names of the horses are displayed in the finish area
 Private blnHorseNamesPhoto As Boolean 'If true: The names of the horses are displayed on the photo of the finish
@@ -48,8 +48,13 @@ Private blnRaceInfoProgressBar As Boolean 'If true: A progress bar of the race d
 Private lngRaceInfoBackColour As Long 'Background colour of the race information
 Private lngRaceInfoForeColour As Long 'Font colour of the race information
 Private intGMPspeedfactor As Integer 'Multiplication factor for the race speed
-Private blnMomentum As Boolean 'If true: Show the momentum speed bar
+Private blnMomentumBars As Boolean 'If true: Show the Momentum speed bars
+Private blnMomentumIcons As Boolean 'If true: Show the Momentum speed icons
 Private intMomentumRefreshRate 'Refresh rate of the speed bars
+Private blnRaceSpeedMonitor As Boolean 'If true: Show the race speed chart
+Private blnRaceSpeedMonitorSpeed As Boolean 'If true: Show the current speed
+Private blnRaceSpeedMonitorDistance As Boolean 'If true: Show the metres run
+Private intRaceSpeedMonitorRefreshRate 'Refresh rate of the race speed monitor
 Private blnSpeech As Boolean 'Speech output
 Private intTide As Integer 'Wadden Sea: Tide height (cm)
 Private intLugwormPopulation As Integer 'Wadden Sea: Lugworm density (%)
@@ -68,6 +73,7 @@ Private lngRaceScoreboardColour As Long 'Background colour of the ranking list
 Private int24hDaylight As Integer 'Daylight factor used for 24h colour mode
 Private lng24hDaylightCol As Long 'Daylight colour used for 24h colour mode
 Private blnAutoFit As Boolean 'Auto-fit of the content according to the windows size
+Private blnAutoSave As Boolean 'Save the race automatically to a file
 
 
 'PROPERTIES
@@ -136,20 +142,12 @@ Public Property Let TACTICS_REVEAL_CURR(ByVal blnX As Boolean)
     blnTacticsRevelationCurr = blnX
 End Property
 
-Public Property Get SLIPSTREAM() As Boolean
-    SLIPSTREAM = blnSlipstream
+Public Property Get SLIPSTREAM_IMPACT() As Integer
+    SLIPSTREAM_IMPACT = intSlipstream
 End Property
 
-Public Property Let SLIPSTREAM(ByVal blnX As Boolean)
-    blnSlipstream = blnX
-End Property
-
-Public Property Get SLIPSTREAM_DBL() As Boolean
-    SLIPSTREAM_DBL = blnSlipstreamDouble
-End Property
-
-Public Property Let SLIPSTREAM_DBL(ByVal blnX As Boolean)
-    blnSlipstreamDouble = blnX
+Public Property Let SLIPSTREAM_IMPACT(ByVal intX As Integer)
+    intSlipstream = intX
 End Property
 
 Public Property Get SLIPSTREAM_SHOW() As Boolean
@@ -205,6 +203,14 @@ End Property
 
 Public Property Let COLOURS_LEFT(ByVal blnX As Boolean)
     blnHorseColoursLeft = blnX
+End Property
+
+Public Property Get ANNOUNCE_FAV() As Boolean
+    ANNOUNCE_FAV = blnAnnounceFav
+End Property
+
+Public Property Let ANNOUNCE_FAV(ByVal blnX As Boolean)
+    blnAnnounceFav = blnX
 End Property
 
 Public Property Get HIGHLIGHT_FAV() As Boolean
@@ -351,12 +357,20 @@ Public Property Let SPEED_FACTOR(ByVal intX As Integer)
     intGMPspeedfactor = intX
 End Property
 
-Public Property Get MOMENTUM() As Boolean
-    MOMENTUM = blnMomentum
+Public Property Get MOMENTUM_BARS() As Boolean
+    MOMENTUM_BARS = blnMomentumBars
 End Property
 
-Public Property Let MOMENTUM(ByVal blnX As Boolean)
-    blnMomentum = blnX
+Public Property Let MOMENTUM_BARS(ByVal blnX As Boolean)
+    blnMomentumBars = blnX
+End Property
+
+Public Property Get MOMENTUM_ICONS() As Boolean
+    MOMENTUM_ICONS = blnMomentumIcons
+End Property
+
+Public Property Let MOMENTUM_ICONS(ByVal blnX As Boolean)
+    blnMomentumIcons = blnX
 End Property
 
 Public Property Get MOMENTUM_REFRESHRATE() As Integer
@@ -365,6 +379,38 @@ End Property
 
 Public Property Let MOMENTUM_REFRESHRATE(ByVal intX As Integer)
     intMomentumRefreshRate = intX
+End Property
+
+Public Property Get SPEEDMONITOR() As Boolean
+    SPEEDMONITOR = blnRaceSpeedMonitor
+End Property
+
+Public Property Let SPEEDMONITOR(ByVal blnX As Boolean)
+    blnRaceSpeedMonitor = blnX
+End Property
+
+Public Property Get RSMON_SPEED() As Boolean
+    RSMON_SPEED = blnRaceSpeedMonitorSpeed
+End Property
+
+Public Property Let RSMON_SPEED(ByVal blnX As Boolean)
+    blnRaceSpeedMonitorSpeed = blnX
+End Property
+
+Public Property Get RSMON_DISTANCE() As Boolean
+    RSMON_DISTANCE = blnRaceSpeedMonitorDistance
+End Property
+
+Public Property Let RSMON_DISTANCE(ByVal blnX As Boolean)
+    blnRaceSpeedMonitorDistance = blnX
+End Property
+
+Public Property Get SPEEDMON_REFRESHRATE() As Integer
+    SPEEDMON_REFRESHRATE = intRaceSpeedMonitorRefreshRate
+End Property
+
+Public Property Let SPEEDMON_REFRESHRATE(ByVal intX As Integer)
+    intRaceSpeedMonitorRefreshRate = intX
 End Property
 
 Public Property Get SPEECH() As Boolean
@@ -525,4 +571,12 @@ End Property
 
 Public Property Let AUTOFIT(ByVal blnX As Boolean)
     blnAutoFit = blnX
+End Property
+
+Public Property Get AUTO_SAVE() As Boolean
+    AUTO_SAVE = blnAutoSave
+End Property
+
+Public Property Let AUTO_SAVE(ByVal blnX As Boolean)
+    blnAutoSave = blnX
 End Property

@@ -110,7 +110,7 @@ Public Sub ActivateRaceSheet()
 End Sub
 
 'Return the column number of a search string to be found in row 1
-Public Function GetColumn(wks As Worksheet, search As String) As Integer
+Public Function GetColumn(wks As Worksheet, ByVal search As String) As Integer
     Dim c As Integer
     For c = 1 To 16384 'Maximum number of columns on a worksheet as of Excel 2007
         If UCase(wks.Cells(1, c).Value) = UCase(search) Then 'Search in the top row (1)
@@ -118,6 +118,7 @@ Public Function GetColumn(wks As Worksheet, search As String) As Integer
             Exit Function
         End If
     Next c
+    GetColumn = 0 'Column not found
 End Function
 
 'Return the row number of a search string to be found in column A
@@ -182,69 +183,69 @@ Public Sub PaintPicture(wksSource As Worksheet, wksTarget As Worksheet, ByVal pi
             For j = left To left + cols - 1
                 With wksTarget.Cells(i, j)
                     .Clear 'Clear the cell content
-                    .Interior.color = wksSource.Cells(m, k).Value 'Format the cell with the background colour
+                    .Interior.Color = wksSource.Cells(m, k).Value 'Format the cell with the background colour
                 
                     'Take the colour mode into account
                     Select Case g_strColourMode
                         Case "POPART"
-                            If wksTarget.Cells(i, j).Interior.color > 0 And wksTarget.Cells(i, j).Interior.color < 16777215 Then _
-                            wksTarget.Cells(i, j).Interior.color = PopArtColour(wksTarget.Cells(i, j).Interior.color)
+                            If wksTarget.Cells(i, j).Interior.Color > 0 And wksTarget.Cells(i, j).Interior.Color < 16777215 Then _
+                            wksTarget.Cells(i, j).Interior.Color = PopArtColour(wksTarget.Cells(i, j).Interior.Color)
                         Case "LSD"
                             With wksTarget.Cells(i, j)
-                                Select Case .Interior.color
+                                Select Case .Interior.Color
                                     Case 0, 16777215 'No change
                                     
                                     Case 14726300 'Heaven
-                                        .Interior.color = colHeavenPop
+                                        .Interior.Color = colHeavenPop
                                     Case 9359529 'Grass
-                                        .Interior.color = colGrassPop
+                                        .Interior.Color = colGrassPop
                                     Case Else
                                         Do
                                             colRandomPop = PopArtColour(Int((16777215 - 0 + 1) * Rnd + 0))
                                         Loop Until colRandomPop <> colHeavenPop And colRandomPop <> colGrassPop
-                                        .Interior.color = colRandomPop
+                                        .Interior.Color = colRandomPop
                                 End Select
                             End With
                         Case "SMARTIES"
                             With wksTarget.Cells(i, j)
-                                Select Case .Interior.color
+                                Select Case .Interior.Color
                                     Case 0, 16777215 'No change
                                     
                                     Case 14726300 'Heaven
-                                        .Interior.color = colHeaven
+                                        .Interior.Color = colHeaven
                                     Case 9359529 'Grass
-                                        .Interior.color = colGrass
+                                        .Interior.Color = colGrass
                                     Case Else
                                         Do
                                             colRandom = Int((16777215 - 0 + 1) * Rnd + 0)
                                         Loop Until colRandom <> colHeaven And colRandom <> colGrass
-                                        .Interior.color = colRandom
+                                        .Interior.Color = colRandom
                                 End Select
                             End With
                         Case "TV1960"
-                            wksTarget.Cells(i, j).Interior.color = GreyToLong(CInt(RGBtoGrey(CLng(wksTarget.Cells(i, j).Interior.color))))
+                            wksTarget.Cells(i, j).Interior.Color = GreyToLong(CInt(RGBtoGrey(CLng(wksTarget.Cells(i, j).Interior.Color))))
                         Case "DARKMODE"
-                            Select Case .Interior.color
+                            Select Case .Interior.Color
                                 Case 0  'Black: change to white
-                                    wksTarget.Cells(i, j).Interior.color = 16777215
+                                    wksTarget.Cells(i, j).Interior.Color = 16777215
                                 Case 16777215  'White: change to black
-                                    wksTarget.Cells(i, j).Interior.color = 0
+                                    wksTarget.Cells(i, j).Interior.Color = 0
 '                                Case 0, 16777215 'No change
                                 
                                 Case 14726300 'Heaven
-                                    .Interior.color = 2697513 'Dark grey
+                                    .Interior.Color = 2697513 'Dark grey
                                 Case 52377 'Grass
-                                    .Interior.color = 0 'Black
+                                    .Interior.Color = 0 'Black
                                 Case Else
-                                    wksTarget.Cells(i, j).Interior.color = DarkModeColour(wksTarget.Cells(i, j).Interior.color)
+                                    wksTarget.Cells(i, j).Interior.Color = DarkModeColour(wksTarget.Cells(i, j).Interior.Color)
                             End Select
                         Case "24H"
                             With wksTarget.Cells(i, j)
-                                Select Case .Interior.color
+                                Select Case .Interior.Color
                                     Case 14726300 'Heaven
-                                        .Interior.color = objOption.DAYLIGHT_COL
+                                        .Interior.Color = objOption.DAYLIGHT_COL
                                     Case Else
-                                        wksTarget.Cells(i, j).Interior.color = DuskDawn(wksTarget.Cells(i, j).Interior.color, Abs(22 * objOption.DAYLIGHT))
+                                        wksTarget.Cells(i, j).Interior.Color = DuskDawn(wksTarget.Cells(i, j).Interior.Color, Abs(22 * objOption.DAYLIGHT))
                                 End Select
                             End With
                     End Select
@@ -284,8 +285,8 @@ Public Sub RaceInfoWorksheet(colBack As Long, colFore As Long, topRows, show As 
     
     'Colours
     With g_wksRace.Range(Cells(1 + topRows, 1), Cells(3 + topRows, 13))
-        .Interior.color = colBack
-        .Font.color = colFore
+        .Interior.Color = colBack
+        .Font.Color = colFore
         If objRace.SPECIAL = "PARTICULATES" Then .Interior.Pattern = objOption.PARTICULATES_PATTERN
     End With
     
@@ -321,15 +322,15 @@ Public Sub RaceInfoWorksheet(colBack As Long, colFore As Long, topRows, show As 
             Dim t As Double, h As Double, l As Double, w As Double
             With Cells(3 + topRows, 12)
                 t = .top
-                h = .Height
+                h = .Height - 4
                 l = .left
-                w = .width - 1 'Show the full frame when scrolling
+                w = .width - 2 'Show the full frame when scrolling
             End With
             
             Set g_shpFrame = g_wksRace.Shapes.AddShape(msoShapeRectangle, l, t, w, h)
 
             With g_shpFrame
-                .Line.Weight = 2
+                .Line.Weight = 1
                 .Line.ForeColor.RGB = RGB( _
                             objOption.RACE_INFO_COL_F Mod 256, _
                             (objOption.RACE_INFO_COL_F \ 256) Mod 256, _
@@ -419,14 +420,16 @@ Public Function GetBlue(lngColor As Long)
     GetBlue = (lngColor \ 256 ^ 2) Mod 256
 End Function
 
+'Change the colour by changing the RGB shares
 Public Function DuskDawn(ByVal lngColor As Long, intPercentage As Integer)
     DuskDawn = RGB(GetRed(lngColor) * (100 - intPercentage) / 100, _
                     GetGreen(lngColor) * (100 - intPercentage) / 100, _
                     GetBlue(lngColor) * (100 - intPercentage) / 100)
 End Function
 
-Public Function BrightLight(ByVal lngColor As Long, intPercentage As Integer)
-    BrightLight = RGB(GetRed(lngColor) + (255 - GetRed(lngColor)) * intPercentage / 100, _
+'[Currently not used]
+Public Function BrightLightBrightLight(ByVal lngColor As Long, intPercentage As Integer)
+    BrightLightBrightLight = RGB(GetRed(lngColor) + (255 - GetRed(lngColor)) * intPercentage / 100, _
                     GetGreen(lngColor) + (255 - GetGreen(lngColor)) * intPercentage / 100, _
                     GetBlue(lngColor) + (255 - GetBlue(lngColor)) * intPercentage / 100)
 End Function

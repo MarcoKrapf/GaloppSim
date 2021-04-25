@@ -37,6 +37,7 @@ Private strADVERTISING As String 'Advertising on the race track (Y/N)
 Private strBETTING_ALLOWED As String 'Placing bets allowed for the chosen race (Y/N)
 Private strRaceSelected As String 'Selected race
 Private blnRaceStarted As Boolean 'Flag indicating whether a race has been started
+Private blnRaceLoaded As Boolean 'Flag indicating whether a saved race has been loaded from disk
 Private strSPECIAL As String 'For special purposes
 
 'PROPERTIES
@@ -262,6 +263,14 @@ End Property
 
 Public Property Let STARTED(ByVal blnX As Boolean)
     blnRaceStarted = blnX
+End Property
+
+Public Property Get LOADED() As Boolean
+    LOADED = blnRaceLoaded
+End Property
+
+Public Property Let LOADED(ByVal blnX As Boolean)
+    blnRaceLoaded = blnX
 End Property
 
 Public Property Get SPECIAL() As String

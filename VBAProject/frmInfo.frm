@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmInfo 
    Caption         =   "[Caption]"
-   ClientHeight    =   6504
-   ClientLeft      =   -84
-   ClientTop       =   -540
-   ClientWidth     =   9468
+   ClientHeight    =   8184
+   ClientLeft      =   -156
+   ClientTop       =   -888
+   ClientWidth     =   10824
    OleObjectBlob   =   "frmInfo.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End
@@ -70,7 +70,7 @@ Private Sub UserForm_Initialize()
         Call AlignObject(lbl_info_team05a, 360, 18, 12, 102, 12)
         Call AlignObject(lbl_info_team05b, 378, 24, 12, 102)
 
-        'Natalie
+        'Enno
         Call AlignObject(img_info_team09, 210, 144, 120, 108)
         Call AlignObject(lbl_info_team09a, 360, 18, 126, 102, 12)
         Call AlignObject(lbl_info_team09b, 378, 24, 126, 102)
@@ -79,26 +79,11 @@ Private Sub UserForm_Initialize()
         Call AlignObject(img_info_team04, 210, 144, 234, 108)
         Call AlignObject(lbl_info_team04a, 360, 18, 240, 102, 12)
         Call AlignObject(lbl_info_team04b, 378, 24, 240, 102)
-
-        'Duncan
-        Call AlignObject(img_info_team08, 210, 144, 348, 108)
-        Call AlignObject(lbl_info_team08a, 360, 18, 354, 102, 12)
-        Call AlignObject(lbl_info_team08b, 378, 24, 354, 102)
-        
-        'Enno
-        Call AlignObject(img_info_team06, 414, 144, 6, 108)
-        Call AlignObject(lbl_info_team06a, 564, 18, 12, 102, 12)
-        Call AlignObject(lbl_info_team06b, 582, 24, 12, 102)
         
         'Farida
-        Call AlignObject(img_info_team10, 414, 144, 120, 108)
-        Call AlignObject(lbl_info_team10a, 564, 18, 126, 102, 12)
-        Call AlignObject(lbl_info_team10b, 582, 24, 126, 102)
-        
-        'Jan
-        Call AlignObject(img_info_team11, 414, 144, 234, 108)
-        Call AlignObject(lbl_info_team11a, 564, 18, 240, 102, 12)
-        Call AlignObject(lbl_info_team11b, 582, 24, 240, 102)
+        Call AlignObject(img_info_team10, 210, 144, 348, 108)
+        Call AlignObject(lbl_info_team10a, 360, 18, 354, 102, 12)
+        Call AlignObject(lbl_info_team10b, 378, 24, 354, 102)
 
     'Prepare the algorithms page
         With multiPage_algo 'Align the MultiPage tabs for the algorithms

@@ -15,6 +15,9 @@ Sub DevelopmentTools()
         g_payoutLogging = False 'Pay-out logging on(True)/off(False)
         g_errorLogPath = Environ("UserProfile") '& "\Desktop" 'Choose the path for the error log file
         g_errorLogging = True 'Error logging on(True)/off(False)
+        g_defaultMLpath = Environ("UserProfile") 'Default path for Machine Learning export
+        g_MLdataFileName = "GALOPPSIM_ML_DATA" 'File name for Machine Learning export
+        g_defaultAutoSavePath = Environ("UserProfile") 'Default path for the auto-save function after a race
 End Sub
 
 'Execute this procedure to display the location of the error log file
@@ -44,7 +47,7 @@ End Sub
 Sub ReadColourValues()
     Dim r As Range
     For Each r In Selection
-        r.Value = r.Interior.color
+        r.Value = r.Interior.Color
     Next
 End Sub
 

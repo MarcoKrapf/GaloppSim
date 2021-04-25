@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmBettingAnalysis 
    Caption         =   "[Caption]"
-   ClientHeight    =   5808
-   ClientLeft      =   -48
-   ClientTop       =   -168
-   ClientWidth     =   8328
+   ClientHeight    =   6816
+   ClientLeft      =   -84
+   ClientTop       =   -360
+   ClientWidth     =   9180
    OleObjectBlob   =   "frmBettingAnalysis.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End
@@ -22,4 +22,3 @@ Private Sub UserForm_Initialize()
     'Display the UserForm in the center of the window
     Call basAuxiliary.PlaceUserFormInCenter(Me)
 End Sub
-

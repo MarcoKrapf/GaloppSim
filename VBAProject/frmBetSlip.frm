@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmBetSlip 
    Caption         =   "[Name]"
-   ClientHeight    =   5520
-   ClientLeft      =   -1512
-   ClientTop       =   -6696
-   ClientWidth     =   14376
+   ClientHeight    =   8952
+   ClientLeft      =   -1548
+   ClientTop       =   -6876
+   ClientWidth     =   20124
    OleObjectBlob   =   "frmBetSlip.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End
@@ -118,6 +118,7 @@ Private Sub cmd141_Click()
         objOption.BET_PLACED = True 'Note that at least one bet slip has been submitted
         Call GetNumberBetSlips 'Refresh the number of bet slips
         frmStart.lstBetSlips.Visible = True 'Show the area with the bet slips
+        frmStart.lblBet02.Visible = True 'Show the label with the number of betting slips
     End If
     
     Exit Sub
@@ -279,12 +280,12 @@ Private Sub ValidateBetSlip()
             m_strType_Text = GetText(g_arr_Text, "BET013")
     End Select
     
-    'Check if a horse has cancelled
+    'Check if a horse does not start
     Dim i As Integer, j As Integer
     For i = 1 To UBound(m_arrintBet)
         For j = 1 To UBound(g_arr_varHorses())
             If m_arrintBet(i) = g_arr_varHorses(j, 11) _
-                And g_arr_varHorses(j, 0) = "CANCELLED" Then
+                And (g_arr_varHorses(j, 0) = "CANCELLED" Or g_arr_varHorses(j, 0) = "CORONAVIRUSPOSITIVE") Then
                     Call ShowInfoPopup(g_c_tool, _
                         GetText(g_arr_Text, "BET029") & " " & m_arrintBet(i) & " " & GetText(g_arr_Text, "BET058"), True, _
                         vbModal, 12)

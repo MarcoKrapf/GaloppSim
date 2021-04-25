@@ -73,15 +73,15 @@ Public Sub PlayMovie2017()
         .Cells(5, 8).Font.name = "MV Boli"
         With .Range(Cells(2, 38), Cells(3, 38))
             .Font.name = "Arial Rounded MT Bold"
-            .Font.color = colText
+            .Font.Color = colText
         End With
         With .Range(Cells(2, 28), Cells(5, 51))
             .Font.name = "Arial Rounded MT Bold"
-            .Font.color = colText
+            .Font.Color = colText
         End With
         With .Range(Cells(2, 22), Cells(4, 28))
             .Font.name = "Arial Rounded MT Bold"
-            .Font.color = colText
+            .Font.Color = colText
         End With
         .Cells(20, 59).Value = GetText(g_arr_Text, "MOVIE005")
     End With
@@ -216,7 +216,7 @@ Public Sub PlayMovie2017()
         ActiveWorkbook.Worksheets("GALOPPSIM_MOVIE").Delete 'Delete the Worksheet
         Application.DisplayAlerts = True 'Re-activate warning messages
 
-    On Error Resume Next
+    On Error Resume Next 'ToDo... Das ist nicht gut programmiert, muss ohne resume next gehen
     'If the full screen mode was activated: Reset the Excel options
         If g_enumButton = enumButton.yes Then Call ResetExcelOptions
         
@@ -249,83 +249,83 @@ Private Sub DrawPicture(col As Integer)
     
     For i = 1 To 40
         For j = 1 To 100
-            g_wksMovie.Cells(i, j).Interior.color = g_wksPIC.Cells(row, col).Value
+            g_wksMovie.Cells(i, j).Interior.Color = g_wksPIC.Cells(row, col).Value
 
             'Take the colour mode into account
             Select Case g_strColourMode
                 Case "POPART"
                     With g_wksMovie.Cells(i, j)
-                        Select Case .Interior.color
+                        Select Case .Interior.Color
                             Case 0, 16777215 'No change
                             
                             Case Else
-                                .Interior.color = PopArtColour(g_wksMovie.Cells(i, j).Interior.color)
+                                .Interior.Color = PopArtColour(g_wksMovie.Cells(i, j).Interior.Color)
                         End Select
                     End With
                 Case "LSD"
                     With g_wksMovie.Cells(i, j)
-                        Select Case .Interior.color
+                        Select Case .Interior.Color
                             Case 0, 16777215 'No change
                             
                             Case 14726300 'Heaven
-                                .Interior.color = colHeavenLSD
+                                .Interior.Color = colHeavenLSD
                             Case 52377 'Grass
-                                .Interior.color = colGrassLSD
+                                .Interior.Color = colGrassLSD
                             Case 10921638 'Fence
-                                .Interior.color = colFenceLSD
+                                .Interior.Color = colFenceLSD
                             Case 3684410 'Speaker
-                                .Interior.color = colSpeakerLSD
+                                .Interior.Color = colSpeakerLSD
                             Case Else
                                 Do
                                     colRandomLSD = PopArtColour(Int((16777215 - 0 + 1) * Rnd + 0))
                                 Loop Until colRandomLSD <> colHeavenLSD And colRandomLSD <> colGrassLSD _
                                         And colRandomLSD <> colFenceLSD
-                                .Interior.color = colRandomLSD
+                                .Interior.Color = colRandomLSD
                         End Select
                     End With
                 Case "SMARTIES"
                     With g_wksMovie.Cells(i, j)
-                        Select Case .Interior.color
+                        Select Case .Interior.Color
                             Case 0, 16777215 'No change
                             
                             Case 14726300 'Heaven
-                                .Interior.color = colHeavenSCM
+                                .Interior.Color = colHeavenSCM
                             Case 52377 'Grass
-                                .Interior.color = colGrassSCM
+                                .Interior.Color = colGrassSCM
                             Case 10921638 'Fence
-                                .Interior.color = colFenceSCM
+                                .Interior.Color = colFenceSCM
                             Case 3684410 'Speaker
-                                .Interior.color = colSpeakerSCM
+                                .Interior.Color = colSpeakerSCM
                             Case Else
                                 Do
                                     colRandomSCM = Int((16777215 - 0 + 1) * Rnd + 0)
                                 Loop Until colRandomSCM <> colHeavenSCM And colRandomSCM <> colGrassSCM _
                                         And colRandomSCM <> colFenceSCM
-                                .Interior.color = colRandomSCM
+                                .Interior.Color = colRandomSCM
                         End Select
                     End With
                 Case "TV1960"
-                    g_wksMovie.Cells(i, j).Interior.color = GreyToLong(CInt(RGBtoGrey(CLng(g_wksMovie.Cells(i, j).Interior.color))))
+                    g_wksMovie.Cells(i, j).Interior.Color = GreyToLong(CInt(RGBtoGrey(CLng(g_wksMovie.Cells(i, j).Interior.Color))))
                 Case "DARKMODE"
                     With g_wksMovie.Cells(i, j)
-                        Select Case .Interior.color
+                        Select Case .Interior.Color
                             Case 0, 16777215 'Black and white: no change
                             
                             Case 14726300 'Heaven
-                                .Interior.color = 2697513 'Dark grey
+                                .Interior.Color = 2697513 'Dark grey
                             Case 52377 'Grass
-                                .Interior.color = 0 'Black
+                                .Interior.Color = 0 'Black
                             Case Else
-                                g_wksMovie.Cells(i, j).Interior.color = DarkModeColour(g_wksMovie.Cells(i, j).Interior.color)
+                                g_wksMovie.Cells(i, j).Interior.Color = DarkModeColour(g_wksMovie.Cells(i, j).Interior.Color)
                         End Select
                     End With
                 Case "24H"
                     With g_wksMovie.Cells(i, j)
-                        Select Case .Interior.color
+                        Select Case .Interior.Color
                             Case 14726300 'Heaven
-                                .Interior.color = objOption.DAYLIGHT_COL
+                                .Interior.Color = objOption.DAYLIGHT_COL
                             Case Else
-                                g_wksMovie.Cells(i, j).Interior.color = DuskDawn(g_wksMovie.Cells(i, j).Interior.color, Abs(22 * objOption.DAYLIGHT))
+                                g_wksMovie.Cells(i, j).Interior.Color = DuskDawn(g_wksMovie.Cells(i, j).Interior.Color, Abs(22 * objOption.DAYLIGHT))
                         End Select
                     End With
             End Select
@@ -340,7 +340,7 @@ End Sub
 
 Private Sub WriteText(r As Integer, c As Integer, text As String)
     With g_wksMovie.Cells(r, c)
-        .Font.color = colText
+        .Font.Color = colText
         .Value = text
     End With
 End Sub

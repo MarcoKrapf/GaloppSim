@@ -15,15 +15,19 @@ Option Private Module
     'Race parameters
     Dim tempSPEED_FACTOR As Integer
     Dim tempSPEECH As Boolean
-    Dim tempMOMENTUM As Boolean
+    Dim tempMOMENTUM_BARS As Boolean
+    Dim tempMOMENTUM_ICONS As Boolean
     Dim tempMOMENTUM_REFRESHRATE As Integer
+    Dim tempSPEEDMONITOR As Boolean
+    Dim tempRSMON_SPEED As Boolean
+    Dim tempRSMON_DISTANCE As Boolean
+    Dim tempSPEEDMON_REFRESHRATE As Integer
     Dim tempTACTICS As Boolean
     Dim tempTACTICS_REVEAL_TAC As Boolean
     Dim tempTACTICS_REVEAL_CURR As Boolean
     Dim tempREFUSE_RUN As Boolean
     Dim tempREFUSAL_RATE As Integer
-    Dim tempSLIPSTREAM As Boolean
-    Dim tempSLIPSTREAM_DBL As Boolean
+    Dim tempSLIPSTREAM_IMPACT As Integer
     Dim tempSLIPSTREAM_SHOW As Boolean
     Dim tempFOCUSED_RUN As Long
     Dim tempHIGHLIGHT_FOC As Boolean
@@ -78,7 +82,10 @@ Public Sub TestStart_std(colScope As Collection, blnRnd As Boolean, _
             Call TestAutomationRandomSettings
             If blnCurrentSpeed Then objOption.SPEED_FACTOR = tempSPEED_FACTOR
             If blnNoSpeech Then objOption.SPEECH = False
-            If blnNoMomentum Then objOption.MOMENTUM = False
+            If blnNoMomentum Then
+                objOption.MOMENTUM_BARS = False
+                objOption.MOMENTUM_ICONS = False
+            End If
             If blnNoInfoCol Then
                 objOption.RACE_INFO_COL_F = vbBlack
                 If g_strPlayMode = "RS" Then
@@ -126,7 +133,7 @@ Public Sub TestStart_std(colScope As Collection, blnRnd As Boolean, _
     Next
     
     Call basAuxiliary.Scroll(1, 1) 'Scroll to the upper left
-    Call RS_MenuAreaShow(False)
+    Call RS_MenuAreaShow
     Call RestoreRaceOptions
     
     frmTestSuite.frameTestProgress.caption = ""
@@ -183,11 +190,41 @@ Private Sub TestAutomationRandomSettings()
     End Select
     Debug.Print vbTab & vbTab & "ColourMode: " & g_strColourMode
 
-    objOption.MOMENTUM = Int((1 - 0 + 1) * Rnd + 0) - 1
-    Debug.Print vbTab & vbTab & "MOMENTUM: " & objOption.MOMENTUM
+    objOption.MOMENTUM_BARS = Int((1 - 0 + 1) * Rnd + 0) - 1
+    Debug.Print vbTab & vbTab & "MOMENTUM_BARS: " & objOption.MOMENTUM_BARS
+    
+    objOption.MOMENTUM_ICONS = Int((1 - 0 + 1) * Rnd + 0) - 1
+    Debug.Print vbTab & vbTab & "MOMENTUM_ICONS: " & objOption.MOMENTUM_ICONS
 
-    objOption.MOMENTUM_REFRESHRATE = Int((8 - 1 + 1) * Rnd + 1)
+    objOption.MOMENTUM_REFRESHRATE = Int((60 - 1 + 1) * Rnd + 1)
     Debug.Print vbTab & vbTab & "MOMENTUM_REFRESHRATE: " & objOption.MOMENTUM_REFRESHRATE
+    
+    objOption.SPEEDMONITOR = Int((1 - 0 + 1) * Rnd + 0) - 1
+    Debug.Print vbTab & vbTab & "SPEEDMONITOR: " & objOption.SPEEDMONITOR
+    
+    If Int((1 - 0 + 1) * Rnd + 0) = 1 Then
+        objOption.RSMON_SPEED = False
+        objOption.RSMON_DISTANCE = True
+        Debug.Print vbTab & vbTab & "RSMON_DISTANCE"
+    Else
+        objOption.RSMON_SPEED = True
+        objOption.RSMON_DISTANCE = False
+        Debug.Print vbTab & vbTab & "RSMON_SPEED"
+    End If
+
+    objOption.SPEEDMON_REFRESHRATE = Int((50 - 10 + 1) * Rnd + 10)
+    Debug.Print vbTab & vbTab & "SPEEDMON_REFRESHRATE: " & objOption.SPEEDMON_REFRESHRATE
+    
+    If objOption.SPEEDMONITOR = 0 Then
+        'Reset the RSMon collection
+        Set g_colRSMon = Nothing
+        Set g_colRSMon = New Collection
+        'Assign between 1 and 3 horses
+        Dim nr As Integer
+        For nr = 1 To Int((3 - 1 + 1) * Rnd + 1)
+            g_colRSMon.Add nr
+        Next
+    End If
 
     objOption.TACTICS = Int((1 - 0 + 1) * Rnd + 0) - 1
     Debug.Print vbTab & vbTab & "TACTICS: " & objOption.TACTICS
@@ -204,11 +241,8 @@ Private Sub TestAutomationRandomSettings()
     objOption.REFUSAL_RATE = Int((1000 - 10 + 1) * Rnd + 10)
     Debug.Print vbTab & vbTab & "REFUSAL_RATE: " & objOption.REFUSAL_RATE
     
-    objOption.SLIPSTREAM = Int((1 - 0 + 1) * Rnd + 0) - 1
-    Debug.Print vbTab & vbTab & "SLIPSTREAM: " & objOption.SLIPSTREAM
-    
-    objOption.SLIPSTREAM_DBL = Int((1 - 0 + 1) * Rnd + 0) - 1
-    Debug.Print vbTab & vbTab & "SLIPSTREAM_DBL: " & objOption.SLIPSTREAM_DBL
+    objOption.SLIPSTREAM_IMPACT = Int((2 - 0 + 1) * Rnd + 0)
+    Debug.Print vbTab & vbTab & "SLIPSTREAM_IMPACT: " & objOption.SLIPSTREAM_IMPACT
     
     objOption.SLIPSTREAM_SHOW = Int((1 - 0 + 1) * Rnd + 0) - 1
     Debug.Print vbTab & vbTab & "SLIPSTREAM_SHOW: " & objOption.SLIPSTREAM_SHOW
@@ -348,8 +382,7 @@ Public Sub MachineLearningSimulation(colScope As Collection, lngRepetitions As L
                     & "RACETYPE" & ";" _
                     & "REFUSE_TO_RUN" & ";" _
                     & "REFUSAL_RATE" & ";" _
-                    & "SLIPSTREAM" & ";" _
-                    & "SLIPSTREAM_DOUBLE" & ";" _
+                    & "SLIPSTREAM_IMPACT" & ";" _
                     & "NAME_AND_STARTING_NR" & ";" _
                     & "STATUS" & ";" _
                     & "PLACEMENT" & ";" _
@@ -410,15 +443,19 @@ Private Sub RememberRaceOptions()
     'Race parameters
     tempSPEED_FACTOR = objOption.SPEED_FACTOR
     tempSPEECH = objOption.SPEECH
-    tempMOMENTUM = objOption.MOMENTUM
+    tempMOMENTUM_BARS = objOption.MOMENTUM_BARS
+    tempMOMENTUM_ICONS = objOption.MOMENTUM_ICONS
     tempMOMENTUM_REFRESHRATE = objOption.MOMENTUM_REFRESHRATE
+    tempSPEEDMONITOR = objOption.SPEEDMONITOR
+    tempRSMON_SPEED = objOption.RSMON_SPEED
+    tempRSMON_DISTANCE = objOption.RSMON_DISTANCE
+    tempSPEEDMON_REFRESHRATE = objOption.SPEEDMON_REFRESHRATE
     tempTACTICS = objOption.TACTICS
     tempTACTICS_REVEAL_TAC = objOption.TACTICS_REVEAL_TAC
     tempTACTICS_REVEAL_CURR = objOption.TACTICS_REVEAL_TAC
     tempREFUSE_RUN = objOption.REFUSE_RUN
     tempREFUSAL_RATE = objOption.REFUSAL_RATE
-    tempSLIPSTREAM = objOption.SLIPSTREAM
-    tempSLIPSTREAM_DBL = objOption.SLIPSTREAM_DBL
+    tempSLIPSTREAM_IMPACT = objOption.SLIPSTREAM_IMPACT
     tempSLIPSTREAM_SHOW = objOption.SLIPSTREAM_SHOW
     tempFOCUSED_RUN = objOption.FOCUSED_RUN
     tempHIGHLIGHT_FOC = objOption.HIGHLIGHT_FOC
@@ -474,15 +511,19 @@ Private Sub RestoreRaceOptions()
     'Race parameters
     objOption.SPEED_FACTOR = tempSPEED_FACTOR
     objOption.SPEECH = tempSPEECH
-    objOption.MOMENTUM = tempMOMENTUM
+    objOption.MOMENTUM_BARS = tempMOMENTUM_BARS
+    objOption.MOMENTUM_ICONS = tempMOMENTUM_ICONS
     objOption.MOMENTUM_REFRESHRATE = tempMOMENTUM_REFRESHRATE
+    objOption.SPEEDMONITOR = tempSPEEDMONITOR
+    objOption.RSMON_SPEED = tempRSMON_SPEED
+    objOption.RSMON_DISTANCE = tempRSMON_DISTANCE
+    objOption.SPEEDMON_REFRESHRATE = tempSPEEDMON_REFRESHRATE
     objOption.TACTICS = tempTACTICS
     objOption.TACTICS_REVEAL_TAC = tempTACTICS_REVEAL_TAC
     objOption.TACTICS_REVEAL_TAC = tempTACTICS_REVEAL_CURR
     objOption.REFUSE_RUN = tempREFUSE_RUN
     objOption.REFUSAL_RATE = tempREFUSAL_RATE
-    objOption.SLIPSTREAM = tempSLIPSTREAM
-    objOption.SLIPSTREAM_DBL = tempSLIPSTREAM_DBL
+    objOption.SLIPSTREAM_IMPACT = tempSLIPSTREAM_IMPACT
     objOption.SLIPSTREAM_SHOW = tempSLIPSTREAM_SHOW
     objOption.FOCUSED_RUN = tempFOCUSED_RUN
     objOption.HIGHLIGHT_FOC = tempHIGHLIGHT_FOC

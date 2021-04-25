@@ -20,14 +20,20 @@ Private Sub Workbook_Open()
 '    Stop
     On Error GoTo ERRORHANDLING 'In case an error occurs
     
+    'Initialize the Super Developer Array
+    g_arr_Developer(1) = 0
+    g_arr_Developer(2) = 0
+    g_arr_Developer(3) = 0
+    
     'Values for development purposes - save and re-open the Workbook for taking effect
     'or change the settings in the module basDeveloper>DevelopmentTools
-        g_skipDelay = False 'Set true to skip delay commands (Application.Wait)
+        g_skipDelay = False 'True 'Set true to skip delay commands (Application.Wait)
         g_errorLogPath = Environ("UserProfile") '& "\Desktop" 'Path for the error log file
         g_errorLogging = False 'Error logging on(true)/off(false)
         g_payoutLogging = False 'Pay-out logging for bets on/off
         g_defaultMLpath = Environ("UserProfile") 'Default path for Machine Learning export
         g_MLdataFileName = "GALOPPSIM_ML_DATA" 'File name for Machine Learning export
+        g_defaultAutoSavePath = Environ("UserProfile") 'Default path for the auto-save function after a race
     'If error logging is turned on: Activate a(ny) VBComponent to have a pane object.
     'This is needed to get the CodeModule name in the error handlers.
         If g_errorLogging = True Then
@@ -60,6 +66,7 @@ Private Sub Workbook_Open()
         Set g_wksTEXT = VBAProject_GaloppSim.Table_TEXT  'Take the internal name (CodeName)
         Set g_wksPIC = VBAProject_GaloppSim.Table_PIC
         Set g_wksTEC = VBAProject_GaloppSim.Table_TEC
+        Set g_wksTCASE = VBAProject_GaloppSim.Table_TESTCASES
         
 '        'Alternative but less stable assignment:
 '        Set g_wksTEC = ThisWorkbook.Worksheets("TEC") 'Attenton: The external name (Worksheet name) could be changed by the user
@@ -72,55 +79,65 @@ Private Sub Workbook_Open()
         Set objStat = New clsStatisctics 'Object for statistical data
         
     'Set the standard settings for the race options
-        objOption.STOP_ALG = False
-        objOption.EXCEL_MODE = "normal"
-        objOption.TACTICS = True
-        objOption.TACTICS_REVEAL_TAC = False
-        objOption.TACTICS_REVEAL_CURR = False
-        objOption.REFUSE_RUN = True
-        objOption.REFUSAL_RATE = 100
-        objOption.SLIPSTREAM = True
-        objOption.SLIPSTREAM_DBL = False
-        objOption.SLIPSTREAM_SHOW = False
-        objOption.FOCUSED_RUN = enumCamera.standard
-        objOption.HIGHLIGHT_FOC = True
-        objOption.HOOFPRINTS = False
-        objOption.NAMES_LEFT = True
-        objOption.COLOURS_LEFT = True
-        objOption.HIGHLIGHT_FAV = True
-        objOption.NAMES_FINISH = True
-        objOption.NAMES_PHOTO = True
-        objOption.PHOTO_BW = False
-        objOption.RANKING_COL = True
-        objOption.RANKING_DELAY = False
-        objOption.BET_MODE = True
-        objOption.BET_PLACED = False
-        objOption.BET_ANALYSIS = True
-        objOption.METRES_DISPLAY = 250
-        objOption.RACE_INFO = True
-        objOption.RACE_INFO_POP = False
-        objOption.RACE_INFO_WKS = True
-        objOption.RACE_INFO_LEADER = True
-        objOption.RACE_INFO_PROGRESS = True
-        objOption.RACE_INFO_COL_B = vbWhite
-        objOption.RACE_INFO_COL_F = vbBlack
-        objOption.SPEED_FACTOR = 1
-        objOption.MOMENTUM = False
-        objOption.MOMENTUM_REFRESHRATE = 4
-        objOption.SPEECH = False
-        objOption.TIDE = 1
-        objOption.LUGWORMS = 1
-        objOption.SPACE_PLANET = enumPlanets.moon
-        objOption.SPACE_ALIENS = enumAliens.unfriendly
-        objOption.SPACE_KIDNAPPINGRATE = 2
-        objOption.TRIBUNES = True
-        objOption.SPECTATORS = 60
-        objOption.PARTICULATES_SLIDER = 3
-        objOption.COL_BACK = xlNone
-        objOption.COL_TEXT = vbBlack
-        objOption.COL_RANKINGS = vbWhite
-        objOption.DAYLIGHT = 0 'High noon (12:00)
-        objOption.AUTOFIT = True
+        With objOption
+            .STOP_ALG = False
+            .EXCEL_MODE = "normal"
+            .TACTICS = True
+            .TACTICS_REVEAL_TAC = False
+            .TACTICS_REVEAL_CURR = False
+            .REFUSE_RUN = True
+            .REFUSAL_RATE = 100
+            .SLIPSTREAM_IMPACT = 1
+            .SLIPSTREAM_SHOW = False
+            .FOCUSED_RUN = enumCamera.standard
+            .HIGHLIGHT_FOC = True
+            .HOOFPRINTS = False
+            .NAMES_LEFT = True
+            .COLOURS_LEFT = True
+            .ANNOUNCE_FAV = True
+            .HIGHLIGHT_FAV = True
+            .NAMES_FINISH = True
+            .NAMES_PHOTO = True
+            .PHOTO_BW = False
+            .RANKING_COL = True
+            .RANKING_DELAY = False
+            .BET_MODE = True
+            .BET_PLACED = False
+            .BET_ANALYSIS = True
+            .METRES_DISPLAY = 250
+            .RACE_INFO = True
+            .RACE_INFO_POP = False
+            .RACE_INFO_WKS = True
+            .RACE_INFO_LEADER = True
+            .RACE_INFO_PROGRESS = True
+            .RACE_INFO_COL_B = vbWhite
+            .RACE_INFO_COL_F = vbBlack
+            .SPEED_FACTOR = 1
+            .MOMENTUM_BARS = False
+            .MOMENTUM_ICONS = False
+            .MOMENTUM_REFRESHRATE = 40
+            .SPEEDMONITOR = False
+            .RSMON_SPEED = True
+            .RSMON_DISTANCE = False
+            .SPEEDMON_REFRESHRATE = 20
+            .SPEECH = False
+            .TIDE = 1
+            .LUGWORMS = 1
+            .SPACE_PLANET = enumPlanets.moon
+            .SPACE_ALIENS = enumAliens.unfriendly
+            .SPACE_KIDNAPPINGRATE = 2
+            .TRIBUNES = True
+            .SPECTATORS = 60
+            .PARTICULATES_SLIDER = 3
+            .COL_BACK = xlNone
+            .COL_TEXT = vbBlack
+            .COL_RANKINGS = vbWhite
+            .DAYLIGHT = 0 'High noon (12:00)
+            .AUTOFIT = True
+            .AUTO_SAVE = False
+        End With
+        
+        objRace.LOADED = False
         
     'Set the default path for GaloppSim files
         g_defaultPath = Application.UserLibraryPath 'Add-in folder
@@ -131,12 +148,6 @@ Private Sub Workbook_Open()
             Case msoLanguageIDGerman, msoLanguageIDGermanAustria, _
                     msoLanguageIDGermanLiechtenstein, msoLanguageIDGermanLuxembourg
                 objOption.language = "DE"
-            'Bulgaria
-            Case msoLanguageIDBulgarian
-                objOption.language = "BG"
-            'Russian speaking countries
-'            Case msoLanguageIDRussian, msoLanguageIDUkrainian
-'                objOption.LANGUAGE = "RU"
             'All other
             Case Else
                 objOption.language = "EN"
@@ -148,6 +159,13 @@ Private Sub Workbook_Open()
 '    Call GetTextComponents
 '    'Alternatively: Even more illustrative using the module name and the 'Call' command
 '    Call basAuxiliary.GetTextComponents
+
+    'Space on the top of the worksheet for control elements like the dropdown and menu buttons
+    If g_strPlayMode = "RS" Then
+        objBasicData.TOP_ROWS = 8
+    Else 'AI edition
+        objBasicData.TOP_ROWS = 0
+    End If
     
     If g_strPlayMode = "RS" Then
         With Application
@@ -164,10 +182,10 @@ ERRORHANDLING:
     Call basAuxiliary.CodeCrash
 End Sub
 
-'Call the SuperAdmin mode on double clicking the jockey´s eye
-Private Sub Workbook_SheetBeforeDoubleClick(ByVal Sh As Object, ByVal Target As Range, Cancel As Boolean)
-    If Sh.name = "GALOPPSIM" And Target.Address = Range("P11").Address Then
-        frmSuperAdmin.show (vbModeless)
+'Call the Super Developer Tools on double clicking the jockey´s eye
+Private Sub Workbook_SheetBeforeDoubleClick(ByVal sh As Object, ByVal Target As Range, Cancel As Boolean)
+    If sh.name = "GALOPPSIM" And Target.Address = Range("P11").Address Then
+        frmSuperDev.show (vbModeless)
         Range("U15").Select
     End If
 End Sub

@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmColourMode 
    Caption         =   "[COLOUR MODE]"
-   ClientHeight    =   4920
-   ClientLeft      =   -312
-   ClientTop       =   -1488
-   ClientWidth     =   10992
+   ClientHeight    =   6192
+   ClientLeft      =   -348
+   ClientTop       =   -1668
+   ClientWidth     =   14904
    OleObjectBlob   =   "frmColourMode.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End
@@ -14,7 +14,6 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit
-
 'Pop-up with the betting analysis after the race
 '   UserForm frmColourMode
 
