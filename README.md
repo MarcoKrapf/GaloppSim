@@ -5,7 +5,7 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 
 ### Version 151.50 (25 April 2021)
 * 24 races
-* Coronavirus test station
+* Coronavirus Test Station
 * Race Speed Monitor (Speed and Distance Mode) 
 * Race Recorder (replay, save and load)
 * Momentum display enhanced (bars and icons)
@@ -25,6 +25,7 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 * Seven colour modes (Light Mode, Dark Mode, Pop Art, Psychedelic Art, Smartie Art, TV 1960 and 24 hours)
 * Race tactics improved
 * Tactics revelation option
+* Special developer function for Race Test Automation
 
 ### Version 150.00 (12 August 2019)
 * 18 races including a space race on Moon, Mars, Jupiter, Pluto and Saturn with alien attacks
