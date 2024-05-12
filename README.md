@@ -3,6 +3,9 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 
 ## Version history
 
+### Version 153.00 (23 December 2023)
+* 30 races
+
 ### Version 151.50 (25 April 2021)
 * 24 races
 * Coronavirus Test Station
