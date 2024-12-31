@@ -3,6 +3,11 @@ The horse racing simulator is available as an [Excel Add-In (.xlam) file or a si
 
 ## Version history
 
+### Version 154.50 (31 December 2024)
+* 32 races including a new race track for vole races with tunnels
+* More race specific options with additional switches and sliders
+* Starting procedure with fixed or random starting box drawing
+
 ### Version 153.00 (23 December 2023)
 * 30 races
 
