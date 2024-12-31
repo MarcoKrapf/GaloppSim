@@ -696,6 +696,8 @@ Sub GetColours_specRace()
         Case "WATT18"
             objOption.COL_BACK = 11573124
             objOption.COL_TEXT = vbBlack
+        Case "GMP2022"
+            objOption.COL_BACK = 12185087
 '        Case Else
 '            objOption.COL_BACK = xlNone
 '            objOption.COL_TEXT = vbBlack

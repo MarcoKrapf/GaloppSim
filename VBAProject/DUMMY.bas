@@ -1,6 +1,6 @@
 Attribute VB_Name = "DUMMY"
 'GALOPPSIM - Excel Horse Racing Simulator
-'Version 151.50
+'Version 154.50
 
 'This is a dummy VBComponent without any code
 'which is activated in Workbook_Open() when using

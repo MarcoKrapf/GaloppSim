@@ -12,6 +12,7 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
 Option Explicit
 
 'Pop-up with the Coronavirus test centre
@@ -24,9 +25,10 @@ Dim i As Integer, j As Integer
 
 Const positivrate As Integer = 20 '(%)
 Const protectionrate As Integer = 95 '(%)
+Const virusmutations As Integer = 5 '(% of all are infected)
 
 Private Sub UserForm_Initialize()
-    Dim x As Integer, y As Integer
+    Dim X As Integer, Y As Integer
     
     ReDim arr_objLabelHorse(1 To objRace.NUMBER_ENROLLED)
     ReDim arr_objLabelStatus(1 To objRace.NUMBER_ENROLLED)
@@ -38,7 +40,7 @@ Private Sub UserForm_Initialize()
         .caption = GetText(g_arr_Text, "CORONA001")
     End With
     
-    x = objRace.NUMBER_STARTING
+    X = objRace.NUMBER_STARTING
     
     For i = 1 To objRace.NUMBER_ENROLLED
     
@@ -74,8 +76,10 @@ Private Sub UserForm_Initialize()
             If g_arr_varHorses(i, 0) = "START" Then
                 If g_arr_varHorses(i, 24) = "VACCINATED" Then
                     .caption = GetText(g_arr_Text, "CORONA008")
-                Else
+                ElseIf g_arr_varHorses(i, 24) = "NOT VACCINATED" Then
                     .caption = GetText(g_arr_Text, "CORONA009")
+                Else
+                    .caption = ""
                 End If
             ElseIf g_arr_varHorses(i, 0) = "CANCELLED" Then
                 .caption = GetText(g_arr_Text, "CORONA010")
@@ -145,13 +149,13 @@ Private Sub UserForm_Initialize()
     End With
     
     'Determine the test execution order
-    ReDim arr_intTestOrder(1 To x)
+    ReDim arr_intTestOrder(1 To X)
     For i = 1 To objRace.NUMBER_ENROLLED
         If g_arr_varHorses(i, 0) = "START" Then  'Needs to be tested
             Do 'Find an empty position in the array
-                y = Int((x - 1 + 1) * Rnd + 1)
-                If arr_intTestOrder(y) = 0 Then
-                    arr_intTestOrder(y) = g_arr_varHorses(i, 11)
+                Y = Int((X - 1 + 1) * Rnd + 1)
+                If arr_intTestOrder(Y) = 0 Then
+                    arr_intTestOrder(Y) = g_arr_varHorses(i, 11)
                     Exit Do
                 End If
             Loop
@@ -178,7 +182,7 @@ Private Sub btnStartTest_Click()
     btnStartTest.caption = GetText(g_arr_Text, "CORONA007")
     
     'Testing starts
-    loops = 20000 '100000 'Number of loops
+    loops = 20000 'Number of loops
     m = 1
     
     #If Debugging Then
@@ -196,10 +200,14 @@ Private Sub btnStartTest_Click()
                 i = Int((((100 / positivrate) - 1) - 0 + 1) * Rnd + 0)
                 Randomize
                 j = Int((((100 / (100 - protectionrate)) - 1) - 0 + 1) * Rnd + 0) 'Vaccination
-            Else
+            ElseIf g_arr_varHorses(arr_intTestOrder(m), 24) = "NOT VACCINATED" Then
                 Randomize
                 i = Int((((100 / positivrate) - 1) - 0 + 1) * Rnd + 0)
                 j = 0 'No vaccination
+            Else
+                Randomize
+                i = Int(((100 / virusmutations) - 0 + 1) * Rnd + 0) 'Virus mutations
+                j = 0
             End If
             
             #If Debugging Then

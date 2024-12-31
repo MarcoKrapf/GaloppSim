@@ -41,6 +41,16 @@ Private Sub UserForm_Initialize()
                 .Visible = True
                 .caption = GetText(g_arr_Text, "RACESPEC001")
             End With
+        Case "DESERT" 'Desert race
+            With cmdS4
+                .Visible = True
+                .caption = GetText(g_arr_Text, "RACESPEC001")
+            End With
+        Case "TUNNEL" 'Tunnel race
+            With cmdS4
+                .Visible = True
+                .caption = GetText(g_arr_Text, "RACESPEC001")
+            End With
     End Select
     
     'Hide the speed section if it should not be displayed
@@ -197,6 +207,10 @@ Private Sub cmdS4_Click()
     Select Case objRace.SPECIAL
         Case "PARTICULATES" 'Particulates in the air
             frmTrackSettingsAirQuality.show (vbModal) 'Pop-up
+        Case "DESERT" 'Desert race
+            frmTrackSettingsDesert.show (vbModal) 'Pop-up
+        Case "TUNNEL" 'Tunnels
+            frmTrackSettingsTunnels.show (vbModal) 'Pop-up
     End Select
     
 End Sub

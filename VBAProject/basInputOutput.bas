@@ -65,6 +65,8 @@ Public Sub SaveRaceOptions()
                 Print #intFileNr, CInt(.chkAutoSaveRace.Value) 'objOption.AUTO_SAVE
                 Print #intFileNr, CInt(.optRSMon1.Value) 'objOption.RSMON_SPEED
                 Print #intFileNr, CInt(.optRSMon2.Value) 'objOption.RSMON_DISTANCE
+                Print #intFileNr, CInt(.opt_grid1.Value) 'objOption.STARTING_GRID_IN
+                Print #intFileNr, CInt(.opt_grid2.Value) 'objOption.STARTING_GRID_BEHIND
             End With
         Close #intFileNr 'Close the output channel
 
@@ -88,7 +90,7 @@ Public Sub LoadRaceOptions()
 
     Dim strFile As String 'File name and path
     Dim intFileNr As Integer 'Input channel
-    Dim arr_strSettings(1 To 45) As String 'String array for the values
+    Dim arr_strSettings(1 To 47) As String 'String array for the values
     Dim i As Integer
     
     On Error Resume Next 'Ignore errors
@@ -154,6 +156,8 @@ Public Sub LoadRaceOptions()
                 .chkAutoSaveRace.Value = CBool(arr_strSettings(43)) 'objOption.AUTO_SAVE
                 .optRSMon1.Value = CBool(arr_strSettings(44)) 'objOption.RSMON_SPEED
                 .optRSMon2.Value = CBool(arr_strSettings(45)) 'objOption.RSMON_DISTANCE
+                .opt_grid1.Value = CBool(arr_strSettings(46)) 'objOption.STARTING_GRID_IN
+                .opt_grid2.Value = CBool(arr_strSettings(47)) 'objOption.STARTING_GRID_BEHIND
             End With
         'Show a pop-up: "Restored successfully."
         Call ShowMessagePopup(GetText(g_arr_Text, "BTN001") & " - " & GetText(g_arr_Text, "RACEOPT038"), _
@@ -303,12 +307,88 @@ Public Sub SaveRaceForReplay(autosave As Boolean)
             Close #intFileNr 'Close the output channel
             
             If Not autosave Then
-                'Show a pop-up: "Successfully saved."
+                'Show a pop-up: "Race data successfully saved."
                 Call ShowMessagePopup(GetText(g_arr_Text, "BTN023"), _
                     GetText(g_arr_Text, "SUCCESS002") & vbNewLine & vbNewLine & varSave, _
                     enumButton.OK, vbModal)
             End If
+        End If
+        
+'Save GEMA data file
+        If Not autosave Then
+            varSave = left(varSave, Len(varSave) - 7) & ".gsgema"
+        Else
+            varSave = g_defaultAutoSavePath & Application.PathSeparator & strFileName & ".gsgema"
+        End If
+        
+        If varSave <> False Then
+        
+            intFileNr = FreeFile 'Assign the next free number
             
+            Open varSave For Output As #intFileNr 'Open the output channel
+                    'GEMA DATA
+                    Print #intFileNr, "[GEMA ROWS]"
+                    Print #intFileNr, UBound(g_arr_GEMA()) 'GEMA rows
+                    Print #intFileNr, "[GEMA LENGTH]"
+                    Print #intFileNr, UBound(g_arr_GEMA(), 2) 'GEMA columns
+
+                    For i = 1 To UBound(g_arr_GEMA()) 'GEMA rows
+                        For j = 1 To UBound(g_arr_GEMA(), 2) 'GEMA columns
+                            Print #intFileNr, g_arr_GEMA(i, j)
+                        Next j
+                    Next i
+
+            Close #intFileNr 'Close the output channel
+            
+            
+            If Not autosave Then
+                'Show a pop-up: "GEMA data successfully saved."
+                Call ShowMessagePopup(GetText(g_arr_Text, "BTN023"), _
+                    GetText(g_arr_Text, "SUCCESS004") & vbNewLine & vbNewLine & varSave, _
+                    enumButton.OK, vbModal)
+            End If
+        End If
+        
+'Save tunnel data file
+        If objRace.SPECIAL = "TUNNEL" Then
+            If Not autosave Then
+                varSave = left(varSave, Len(varSave) - 7) & ".gstunn"
+            Else
+                varSave = g_defaultAutoSavePath & Application.PathSeparator & strFileName & ".gstunn"
+            End If
+            
+            If varSave <> False Then
+            
+                intFileNr = FreeFile 'Assign the next free number
+                
+                Open varSave For Output As #intFileNr 'Open the output channel
+                        'ROAD CROSSING AND POLICE CAR
+                        Print #intFileNr, "[ROADCROSSING]"
+                        Print #intFileNr, objOption.ROADCROSSING
+                        Print #intFileNr, "[POLICECAR]"
+                        Print #intFileNr, objOption.POLICECAR
+                        'TUNNEL DATA
+                        Print #intFileNr, "[TUNNEL DATA DIMENSION 1]"
+                        Print #intFileNr, UBound(g_arr_varReplay_TunnelData())
+                        Print #intFileNr, "[TUNNEL DATA DIMENSION 2]"
+                        Print #intFileNr, UBound(g_arr_varReplay_TunnelData(), 2)
+    
+                        For i = 1 To UBound(g_arr_varReplay_TunnelData())
+                            For j = 1 To UBound(g_arr_varReplay_TunnelData(), 2)
+                                Print #intFileNr, g_arr_varReplay_TunnelData(i, j)
+                            Next j
+                        Next i
+    
+                Close #intFileNr 'Close the output channel
+                
+                
+                If Not autosave Then
+                    'Show a pop-up: "Tunnel data successfully saved."
+                    Call ShowMessagePopup(GetText(g_arr_Text, "BTN023"), _
+                        GetText(g_arr_Text, "SUCCESS005") & vbNewLine & vbNewLine & varSave, _
+                        enumButton.OK, vbModal)
+                End If
+            End If
         End If
 
     Exit Sub
@@ -334,6 +414,10 @@ Public Sub LoadRaceForReplay()
     Dim tempHorses As Integer, tempLoops As Long
     Dim tempArray() As Variant
     Dim tempRacelog() As Double
+    Dim gemaRows As Integer
+    Dim gemaLength As Integer
+    Dim tunnelDim1 As Integer
+    Dim tunnelDim2 As Integer
     
     ReDim g_arr_varReplay_RaceData(1 To 24, 0 To 1)
     g_arr_varReplay_RaceData(1, 0) = "GaloppSim Version"
@@ -531,6 +615,92 @@ Public Sub LoadRaceForReplay()
             enumButton.OK, vbModal)
         Exit Sub
     End If
+    
+'Load GEMA data file (if the file exists)
+    #If Debugging Then
+        Debug.Print "Search for a GEMA file (.gsgema)..."
+    #End If
+
+    varLoad = left(varLoad, Len(varLoad) - 7) & ".gsgema"
+    
+    If Dir(varLoad) <> "" Then
+    #If Debugging Then
+        Debug.Print "GEMA file found. Load GEMA data."
+    #End If
+
+        intFileNr = FreeFile 'Assign the next free number
+
+        'Load the data
+        Open varLoad For Input As #intFileNr 'Open the input channel
+            Line Input #intFileNr, strInput 'description [GEMA ROWS]
+            Line Input #intFileNr, strInput
+                gemaRows = strInput
+            Line Input #intFileNr, strInput 'description [GEMA LENGTH]
+            Line Input #intFileNr, strInput
+                gemaLength = strInput
+            
+            ReDim g_arr_GEMA(1 To gemaRows, 1 To gemaLength)
+            
+            For i = 1 To gemaRows
+                For j = 1 To gemaLength
+                    Line Input #intFileNr, strInput
+                    g_arr_GEMA(i, j) = strInput
+                Next j
+            Next i
+        
+        Close #intFileNr 'Close the input channel
+    
+    Else
+    #If Debugging Then
+        Debug.Print "No GEMA file found."
+    #End If
+    End If
+    
+'Load tunnel data file (if the file exists)
+    #If Debugging Then
+        Debug.Print "Search for a TUNNEL file (.gstunn)..."
+    #End If
+    varLoad = left(varLoad, Len(varLoad) - 7) & ".gstunn"
+    
+    If Dir(varLoad) <> "" Then
+    #If Debugging Then
+        Debug.Print "TUNNEL file found. Load tunnel data."
+    #End If
+
+        intFileNr = FreeFile 'Assign the next free number
+
+        'Load the data
+        Open varLoad For Input As #intFileNr 'Open the input channel
+            Line Input #intFileNr, strInput 'description [ROADCROSSING]
+            Line Input #intFileNr, strInput
+                objOption.ROADCROSSING = CBool(strInput)
+            Line Input #intFileNr, strInput 'description [POLICECAR]
+            Line Input #intFileNr, strInput
+                objOption.POLICECAR = CBool(strInput)
+            Line Input #intFileNr, strInput 'description [TUNNEL DATA DIMENSION 1]
+            Line Input #intFileNr, strInput
+                tunnelDim1 = strInput
+            Line Input #intFileNr, strInput 'description [TUNNEL DATA DIMENSION 2]
+            Line Input #intFileNr, strInput
+                tunnelDim2 = strInput
+
+            ReDim g_arr_varReplay_TunnelData(1 To tunnelDim1, 0 To tunnelDim2)
+
+            For i = 1 To tunnelDim1
+                For j = 1 To tunnelDim2
+                    Line Input #intFileNr, strInput
+                    g_arr_varReplay_TunnelData(i, j) = strInput
+                Next j
+            Next i
+        
+        Close #intFileNr 'Close the input channel
+    
+    Else
+    #If Debugging Then
+        Debug.Print "No TUNNEL file found."
+    #End If
+    End If
+    
     
     objRace.LOADED = True
     

@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmOptionsRace 
    Caption         =   "[Race options]"
-   ClientHeight    =   11280
+   ClientHeight    =   8940
    ClientLeft      =   -1812
    ClientTop       =   -7860
-   ClientWidth     =   14112
+   ClientWidth     =   17964
    OleObjectBlob   =   "frmOptionsRace.frx":0000
    StartUpPosition =   1  'Fenstermitte
 End
@@ -13,6 +13,7 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
 Option Explicit
 
 'Pop-up for setting the race options
@@ -80,8 +81,8 @@ Private Sub UserForm_Initialize()
          Call togRS_ro01_Click
     
     With Me
-        .Height = 590
-        .width = 685
+        .Height = 475
+        .width = 910
         .StartUpPosition = 0 'Place the UserForm in the upper left corner
         .top = 0
         .left = 0
@@ -132,7 +133,7 @@ Private Sub UserForm_Initialize()
         .cmdRS_ro03b.caption = GetText(g_arr_Text, "RACEOPT038")
         .opt_ro01.caption = GetText(g_arr_Text, "RACEOPT039")
         .opt_ro02.caption = GetText(g_arr_Text, "RACEOPT040")
-        .lblRS_ro10.caption = GetText(g_arr_Text, "RACEOPT042")
+        .fraRS_ro11.caption = GetText(g_arr_Text, "RACEOPT042")
         .lblRS_ro11.caption = objOption.SPEED_FACTOR & GetText(g_arr_Text, "RACEOPT043")
         .lblRS_ro12a.caption = GetText(g_arr_Text, "RACEOPT046")
         .lblRS_ro12b.caption = GetText(g_arr_Text, "RACEOPT047")
@@ -165,6 +166,10 @@ Private Sub UserForm_Initialize()
         .lblRS_ro15.caption = GetText(g_arr_Text, "RACEOPT072")
         .chkRS_ro19.caption = GetText(g_arr_Text, "RACEOPT073")
         .chkAutoSaveRace.caption = GetText(g_arr_Text, "RACEOPT091")
+        .lblRS_ro16.caption = GetText(g_arr_Text, "RACEOPT094")
+        .fraRS_ro16.caption = GetText(g_arr_Text, "RACEOPT095")
+        .opt_grid1.caption = g_arr_Grammar(3) & " " & GetText(g_arr_Text, "RACEOPT096")
+        .opt_grid2.caption = g_arr_Grammar(3) & " " & GetText(g_arr_Text, "RACEOPT097")
         
         'ControlTipTexts
         .optRS_ro01.ControlTipText = GetText(g_arr_Text, "TIP001a") & " " & g_arr_Grammar(4) & " " & GetText(g_arr_Text, "TIP001b")
@@ -205,6 +210,8 @@ Private Sub UserForm_Initialize()
         .chk_TEO2.ControlTipText = GetText(g_arr_Text, "TIP030")
         .chkRS_ro19.ControlTipText = GetText(g_arr_Text, "TIP036")
         .chkAutoSaveRace.ControlTipText = GetText(g_arr_Text, "TIP056") & " " & g_defaultAutoSavePath
+        .opt_grid1.ControlTipText = GetText(g_arr_Text, "TIP001a") & " " & g_arr_Grammar(3) & " " & GetText(g_arr_Text, "RACEOPT098")
+        .opt_grid2.ControlTipText = GetText(g_arr_Text, "TIP001a") & " " & g_arr_Grammar(3) & " " & GetText(g_arr_Text, "RACEOPT099")
         
         'Get values
         .optRS_ro01.Value = (objOption.TACTICS = False)
@@ -274,6 +281,8 @@ Private Sub UserForm_Initialize()
         .optRSMon2.Value = objOption.RSMON_DISTANCE
         .optRSMon1.Enabled = (objOption.SPEEDMONITOR = True) 'Enabled only if the "RSMon" checkbox is ticked
         .optRSMon2.Enabled = (objOption.SPEEDMONITOR = True) 'Enabled only if the "RSMon" checkbox is ticked
+        .opt_grid1.Value = objOption.STARTING_GRID_IN
+        .opt_grid2.Value = objOption.STARTING_GRID_BEHIND
         .chkRS_ro19.Value = objOption.AUTOFIT
         .chkAutoSaveRace.Value = objOption.AUTO_SAVE
     End With
@@ -388,6 +397,8 @@ Private Sub cmdRS_ro01_Click()
     objOption.SPECTATORS = scrSpec.Value
     objOption.AUTOFIT = chkRS_ro19.Value
     objOption.AUTO_SAVE = chkAutoSaveRace.Value
+    objOption.STARTING_GRID_IN = opt_grid1.Value
+    objOption.STARTING_GRID_BEHIND = opt_grid2.Value
     
     'Adapt the caption of the race start button ("Start the race" or "Betting and race")
     If g_strPlayMode = "RS" Then

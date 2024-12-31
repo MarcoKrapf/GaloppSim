@@ -56,6 +56,7 @@ Private blnRaceSpeedMonitorSpeed As Boolean 'If true: Show the current speed
 Private blnRaceSpeedMonitorDistance As Boolean 'If true: Show the metres run
 Private intRaceSpeedMonitorRefreshRate 'Refresh rate of the race speed monitor
 Private blnSpeech As Boolean 'Speech output
+Private blnSplash As Boolean 'Wadden Sea: Water splashes
 Private intTide As Integer 'Wadden Sea: Tide height (cm)
 Private intLugwormPopulation As Integer 'Wadden Sea: Lugworm density (%)
 Private lngLugwormColour As Long 'Wadden Sea: Colour of the lugworms
@@ -74,6 +75,13 @@ Private int24hDaylight As Integer 'Daylight factor used for 24h colour mode
 Private lng24hDaylightCol As Long 'Daylight colour used for 24h colour mode
 Private blnAutoFit As Boolean 'Auto-fit of the content according to the windows size
 Private blnAutoSave As Boolean 'Save the race automatically to a file
+Private blnStartingGridIn As Boolean 'Horses are already in the starting grid
+Private blnStartingGridBehind As Boolean 'Horses are waiting behind the starting grid
+Private blnSandDust As Boolean 'Desert: Sand dust clouds behind the camels
+Private intTunnelCount As Integer 'Tunnels: Number of tunnels per row
+Private intTunnelLength As Integer 'Tunnels: Total tunnel length per row
+Private blnRoadCrossing As Boolean 'Road crossing the race track
+Private blnPoliceCar As Boolean 'Race is secured by the police
 
 
 'PROPERTIES
@@ -421,6 +429,14 @@ Public Property Let SPEECH(ByVal blnX As Boolean)
     blnSpeech = blnX
 End Property
 
+Public Property Get WATER_SPLASHES() As Boolean
+    WATER_SPLASHES = blnSplash
+End Property
+
+Public Property Let WATER_SPLASHES(ByVal blnX As Boolean)
+    blnSplash = blnX
+End Property
+
 Public Property Get TIDE() As Integer
     TIDE = intTide
 End Property
@@ -579,4 +595,60 @@ End Property
 
 Public Property Let AUTO_SAVE(ByVal blnX As Boolean)
     blnAutoSave = blnX
+End Property
+
+Public Property Get STARTING_GRID_IN() As Boolean
+    STARTING_GRID_IN = blnStartingGridIn
+End Property
+
+Public Property Let STARTING_GRID_IN(ByVal blnX As Boolean)
+    blnStartingGridIn = blnX
+End Property
+
+Public Property Get STARTING_GRID_BEHIND() As Boolean
+    STARTING_GRID_BEHIND = blnStartingGridBehind
+End Property
+
+Public Property Let STARTING_GRID_BEHIND(ByVal blnX As Boolean)
+    blnStartingGridBehind = blnX
+End Property
+
+Public Property Get SAND_DUST() As Boolean
+    SAND_DUST = blnSandDust
+End Property
+
+Public Property Let SAND_DUST(ByVal blnX As Boolean)
+    blnSandDust = blnX
+End Property
+
+Public Property Get TUNNEL_COUNT() As Integer
+    TUNNEL_COUNT = intTunnelCount
+End Property
+
+Public Property Let TUNNEL_COUNT(ByVal intX As Integer)
+    intTunnelCount = intX
+End Property
+
+Public Property Get TUNNEL_LENGTH() As Integer
+    TUNNEL_LENGTH = intTunnelLength
+End Property
+
+Public Property Let TUNNEL_LENGTH(ByVal intX As Integer)
+    intTunnelLength = intX
+End Property
+
+Public Property Get ROADCROSSING() As Boolean
+    ROADCROSSING = blnRoadCrossing
+End Property
+
+Public Property Let ROADCROSSING(ByVal blnX As Boolean)
+    blnRoadCrossing = blnX
+End Property
+
+Public Property Get POLICECAR() As Boolean
+    POLICECAR = blnPoliceCar
+End Property
+
+Public Property Let POLICECAR(ByVal blnX As Boolean)
+    blnPoliceCar = blnX
 End Property

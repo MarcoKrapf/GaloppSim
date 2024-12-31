@@ -106,8 +106,8 @@ Private Sub Workbook_Open()
             .BET_ANALYSIS = True
             .METRES_DISPLAY = 250
             .RACE_INFO = True
-            .RACE_INFO_POP = False
-            .RACE_INFO_WKS = True
+            .RACE_INFO_POP = True
+            .RACE_INFO_WKS = False
             .RACE_INFO_LEADER = True
             .RACE_INFO_PROGRESS = True
             .RACE_INFO_COL_B = vbWhite
@@ -120,12 +120,18 @@ Private Sub Workbook_Open()
             .RSMON_SPEED = True
             .RSMON_DISTANCE = False
             .SPEEDMON_REFRESHRATE = 20
+            .STARTING_GRID_BEHIND = False
+            .STARTING_GRID_IN = True
             .SPEECH = False
             .TIDE = 1
             .LUGWORMS = 1
+            .WATER_SPLASHES = True
+            .SAND_DUST = True
             .SPACE_PLANET = enumPlanets.moon
             .SPACE_ALIENS = enumAliens.unfriendly
             .SPACE_KIDNAPPINGRATE = 2
+            .TUNNEL_COUNT = 2
+            .TUNNEL_LENGTH = 300
             .TRIBUNES = True
             .SPECTATORS = 60
             .PARTICULATES_SLIDER = 3
@@ -135,8 +141,10 @@ Private Sub Workbook_Open()
             .DAYLIGHT = 0 'High noon (12:00)
             .AUTOFIT = True
             .AUTO_SAVE = False
+            .ROADCROSSING = True
+            .POLICECAR = True
         End With
-        
+
         objRace.LOADED = False
         
     'Set the default path for GaloppSim files

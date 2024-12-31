@@ -50,11 +50,14 @@ Option Private Module
     Dim tempRACE_INFO_PROGRESS As Boolean
     Dim tempRACE_INFO_COL_B As Long
     Dim tempRACE_INFO_COL_F As Long
+    Dim tempSTARTING_GRID_IN As Boolean
+    Dim tempSTARTING_GRID_BEHIND As Boolean
     
     'Race specific parameters
     Dim tempPARTICULATES_SLIDER As Integer
     Dim tempTIDE As Integer
     Dim tempLUGWORMS As Integer
+    Dim tempWATER_SPLASHES As Boolean
 
 Public Sub TestStart_std(colScope As Collection, blnRnd As Boolean, _
         blnCurrentSpeed As Boolean, blnNoMomentum As Boolean, blnNoSpeech As Boolean, _
@@ -324,6 +327,17 @@ Private Sub TestAutomationRandomSettings()
     objOption.SPEED_FACTOR = Int((5 - 1 + 1) * Rnd + 1)
     Debug.Print vbTab & vbTab & "SPEED_FACTOR: " & objOption.SPEED_FACTOR
 
+    Debug.Print vbTab & vbTab & "STARTING PROCEDURE: "
+    If Int((1 - 0 + 1) * Rnd + 0) = 1 Then
+        objOption.STARTING_GRID_BEHIND = False
+        objOption.STARTING_GRID_IN = True
+        Debug.Print vbTab & vbTab & "STARTING_GRID_IN"
+    Else
+        objOption.STARTING_GRID_BEHIND = True
+        objOption.STARTING_GRID_IN = False
+        Debug.Print vbTab & vbTab & "STARTING_GRID_BEHIND"
+    End If
+
     'Race specific parameters
     objOption.PARTICULATES_SLIDER = Int((5 - 0 + 1) * Rnd + 0)
     Debug.Print vbTab & vbTab & "PARTICULATES_SLIDER: " & objOption.PARTICULATES_SLIDER
@@ -333,6 +347,9 @@ Private Sub TestAutomationRandomSettings()
     
     objOption.LUGWORMS = Int((100 - 0 + 1) * Rnd + 0)
     Debug.Print vbTab & vbTab & "LUGWORMS: " & objOption.LUGWORMS
+    
+    objOption.WATER_SPLASHES = Int((1 - 0 + 1) * Rnd + 0) - 1
+    Debug.Print vbTab & vbTab & "WATER_SPLASHES: " & objOption.WATER_SPLASHES
 
     objOption.SPACE_PLANET = Int((4 - 0 + 1) * Rnd + 0)
     Debug.Print vbTab & vbTab & "SPACE_PLANET: " & objOption.SPACE_PLANET
@@ -478,11 +495,14 @@ Private Sub RememberRaceOptions()
     tempRACE_INFO_PROGRESS = objOption.RACE_INFO_PROGRESS
     tempRACE_INFO_COL_B = objOption.RACE_INFO_COL_B
     tempRACE_INFO_COL_F = objOption.RACE_INFO_COL_F
+    tempSTARTING_GRID_IN = objOption.STARTING_GRID_IN
+    tempSTARTING_GRID_BEHIND = objOption.STARTING_GRID_BEHIND
 
     'Race specific parameters
     tempPARTICULATES_SLIDER = objOption.PARTICULATES_SLIDER
     tempTIDE = objOption.TIDE
     tempLUGWORMS = objOption.LUGWORMS
+    tempWATER_SPLASHES = objOption.WATER_SPLASHES
 
 End Sub
 
@@ -546,10 +566,13 @@ Private Sub RestoreRaceOptions()
     objOption.RACE_INFO_PROGRESS = tempRACE_INFO_PROGRESS
     objOption.RACE_INFO_COL_B = tempRACE_INFO_COL_B
     objOption.RACE_INFO_COL_F = tempRACE_INFO_COL_F
+    objOption.STARTING_GRID_IN = tempSTARTING_GRID_IN
+    objOption.STARTING_GRID_BEHIND = tempSTARTING_GRID_BEHIND
     
     'Race specific parameters
     objOption.PARTICULATES_SLIDER = tempPARTICULATES_SLIDER
     objOption.TIDE = tempTIDE
     objOption.LUGWORMS = tempLUGWORMS
+    objOption.WATER_SPLASHES = tempWATER_SPLASHES
 
 End Sub
